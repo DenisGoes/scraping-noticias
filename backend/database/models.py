@@ -28,3 +28,6 @@ class Noticias(Base):
         DateTime(timezone=True),
         nullable=True,
     )
+
+    enviado_telegram = Mapped[bool] = mapped_column(default=False)
+    telegram_message_id = Mapped[int] = mapped_column(nullable=True)
