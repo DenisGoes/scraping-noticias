@@ -11,9 +11,6 @@ engine = create_engine(DATABASE_URL)
 
 Session = sessionmaker(engine)
 
-with Session() as session:
-    pass
-
 
 
 class Base(DeclarativeBase):
