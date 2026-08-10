@@ -3,7 +3,7 @@ from backend.database.models import Noticias
 from sqlalchemy import select
 
 
-def salvar_noticia(titulo, fonte, data_publicacao, link):
+def salvar_noticia(titulo, fonte, data_publicacao, link, mensagem):
     with Session() as session:
         try:
             noticia = session.scalar(select(Noticias).where(Noticias.link == link))
@@ -13,7 +13,11 @@ def salvar_noticia(titulo, fonte, data_publicacao, link):
                 return False
 
             nova_noticia = Noticias(
-                titulo=titulo, fonte=fonte, data_publicacao=data_publicacao, link=link
+                titulo=titulo, 
+                fonte=fonte, 
+                data_publicacao=data_publicacao, 
+                link=link,
+                mensagem=mensagem
             )
 
             session.add(nova_noticia)

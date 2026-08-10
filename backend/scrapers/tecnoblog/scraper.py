@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 from backend.database.crud.crud_tecnoblog import salvar_noticia
-
+from backend.database.models import Noticias
+from backend.bot.telegram import enviar_noticias
 
 def run_scraper():
     with sync_playwright() as p:
@@ -17,18 +18,18 @@ def run_scraper():
                 card = cards.nth(i)
 
                 titulo = card.locator(".texts h2").inner_text()
-                # print(titulo)
+                print(titulo)
 
                 fonte = "Tecnoblog"
 
                 data_publicacao = card.locator(".info time").inner_text()
-                # print(data_publicacao)
+                print(data_publicacao)
 
                 link = card.locator("a").get_attribute("href")
-                # print(link)
+                print(link)
 
                 mensagem = (
-                    "🔥 <b>Nova notícia do Tecnoblog!</b>\n\n"
+                    "🔥 <b>Nova notícia encontrada!</b>\n\n"
                     f"📌 <b>{titulo}</b>\n"
                     f"🏢 {fonte}\n"
                     f"📍 {data_publicacao}\n"
@@ -46,9 +47,12 @@ def run_scraper():
                     titulo=titulo, 
                     fonte=fonte, 
                     data_publicacao=data_publicacao, 
-                    link=link
+                    link=link,
+                    mensagem=mensagem
                 )
+
             except Exception as e:
                 print(f"Algo inesperado aconteceu! {e}")
 
         browser.close()
+    enviar_noticias()

@@ -29,5 +29,7 @@ class Noticias(Base):
         nullable=True,
     )
 
-    enviado_telegram = Mapped[bool] = mapped_column(default=False)
-    telegram_message_id = Mapped[int] = mapped_column(nullable=True)
+    enviado_telegram: Mapped[bool] = mapped_column(default=False)
+    telegram_message_id: Mapped[int] = mapped_column(nullable=True)
+    mensagem: Mapped[str] = mapped_column(nullable=False)
+    
