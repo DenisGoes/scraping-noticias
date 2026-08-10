@@ -11,6 +11,7 @@ from sqlalchemy import select
 from backend.database.session import Session
 from backend.database.models import Noticias
 
+from datetime import datetime, timedelta, UTC
 
 load_dotenv()
 
@@ -41,9 +42,11 @@ def callback(call):
 
             if acao == "LIDA":
                 noticia.status = "LIDA"
+                noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
 
             elif acao == "REJEITADA":
                 noticia.status = "REJEITADA"
+                noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
 
             else:
                 bot.answer_callback_query(
