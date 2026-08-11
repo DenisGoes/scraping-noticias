@@ -2,7 +2,7 @@ nome: Scraper Notícias
 
 on:
   schedule:
-    - cron: "0 9 * * *" #Executar todos os dias às 06:00
+    - cron: "0 5 * * *" #Executar todos os dias às 05:00
   workflow_dispatch:
 
 jobs:
