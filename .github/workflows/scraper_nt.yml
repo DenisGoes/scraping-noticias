@@ -2,7 +2,7 @@ nome: Scraper Notícias
 
 on:
   schedule:
-    - cron: "0 5 * * *" #Executar todos os dias às 05:00
+    - cron: "0 9 * * *" #Executar todos os dias às 06:00
   workflow_dispatch:
 
 jobs:
@@ -31,6 +31,6 @@ jobs:
     env:  
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
       API_TOKEN: ${{ secrets.API_TOKEN }}
-      ID_CANAL: ${{ secrets.CANAL_ID }}
+      ID_CANAL: ${{ secrets.ID_CANAL }}
     run: python -m backend.scripts.run_tecnoblog #Alterar para rodar todos os scrapers em um só script
     

@@ -2,7 +2,7 @@ name: Limpeza diária
 
 on:
   schedule:
-    - cron: "0 9 * * *"
+    - cron: "0 8 * * *" #Executa todos os dias às 05:00 am
   workflow_dispatch:
 
 jobs:
