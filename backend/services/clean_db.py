@@ -4,8 +4,8 @@ from sqlalchemy import select, or_
 from datetime import datetime, UTC
 
 def clean_dados():
+    agora = datetime.now(UTC)
     with Session() as session:
-        agora = datetime.now(UTC)
         try:
             noticias = session.execute(
                 select(Noticias).where(Noticias.remover_em <= agora)
@@ -21,4 +21,5 @@ def clean_dados():
 
         except Exception as e:
             session.rollback()
+            raise
             print(f"Algo inesperado aconteceu! Rollback executado! {e}")
