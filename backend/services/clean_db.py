@@ -22,4 +22,3 @@ def clean_dados():
         except Exception as e:
             session.rollback()
             raise
-            print(f"Algo inesperado aconteceu! Rollback executado! {e}")
