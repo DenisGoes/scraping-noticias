@@ -2,7 +2,7 @@ name: Limpeza diária
 
 on:
   schedule:
-    - cron: "0 9 * * *" # Executar todos os dias às 06:00
+    - cron: "0 9 * * *"
   workflow_dispatch:
 
 jobs:
@@ -24,4 +24,6 @@ jobs:
           pip install -r requirements.txt
 
       - name: Executar Limpeza
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -m backend.scripts.run_cleanup
