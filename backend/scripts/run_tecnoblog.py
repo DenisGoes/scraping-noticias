@@ -1,4 +1,4 @@
-from backend.scrapers.tecnoblog.scraper import run_scraper
+from backend.scrapers.tecnologia.tecnoblog.scraper import run_scraper
 
 
 def main():

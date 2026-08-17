@@ -149,11 +149,3 @@ def enviar_noticias():
         except Exception as e:
             session.rollback()
             print(f"❌ Erro ao enviar notícias: {e}")
-
-
-if __name__ == "__main__":
-    print("🚀 Iniciando bot...")
-
-    bot.infinity_polling(
-        skip_pending=True
-    )

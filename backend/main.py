@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from dotenv import load_dotenv
@@ -56,3 +57,13 @@ def root():
 #     "https://dazzling-destitute-fragrance.ngrok-free.dev"
 #     f"/webhook/dev/{API_TOKEN}"
 # )
+=======
+from fastapi import FastAPI
+from backend.api.routes.noticias import router_noti
+
+
+app = FastAPI()
+
+app.include_router(router_noti)
+
+>>>>>>> desenvolvimento
