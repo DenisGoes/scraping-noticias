@@ -1,33 +1,39 @@
-# 1 - Imagem base
+# Imagem base
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 
-# 2 - Diretorio de trabalho
+# Diretorio de trabalho
 WORKDIR /app
 
-# 3 - Dependencias do sistema
-RUN apt-get update && apt-get install -y \ 
-    <dependencias-do-sistema> \
-    ** rm -rf /var/lib/apt/lists/*
+# Dependencias do sistema
+RUN apt-get update && apt-get install -y \
+    wget \
+    curl \
+    ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
 
-# 4 - Dependencias python
+# Dependencias python
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt
 
+# Instala os browsers do Playwright
+RUN playwright install --with-deps chromium
 
-# 5 - Código da aplicação
+# Código da aplicação
 COPY . .
 
-# 6 - Criando usuario
-RUN useradd --create-home appuser
+# Criando usuario
+RUN useradd --create-home appuser \
+    && chown -R appuser:appuser /app
+    
 USER appuser
 
-# 7 - Porta da aplicação
+# Porta da aplicação
 EXPOSE 8000
 
-# 8 - Comando para produção
-CMD [ "uvicorn", "backend.main.app", "--host", "0.0.0.0", "--port", "8000" ]
+# Comando para produção
+CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
