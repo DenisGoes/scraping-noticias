@@ -5,7 +5,7 @@ import telebot
 webhook_router = APIRouter(prefix="/telegram/webhook", tags=["webhook"])
 
 
-@webhook_router.post("/")
+@webhook_router.post("")
 async def receber_webhook(update: dict):
 
     if update:
