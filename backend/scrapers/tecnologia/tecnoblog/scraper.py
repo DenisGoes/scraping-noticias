@@ -3,7 +3,7 @@ from backend.database.crud.crud_tecnoblog import salvar_noticia
 from backend.database.models import Noticias
 from backend.bot.telegram import enviar_noticias
 
-def run_scraper():
+def run_scraper_tec():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
