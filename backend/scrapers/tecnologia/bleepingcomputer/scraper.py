@@ -5,7 +5,7 @@ from backend.bot.telegram import enviar_noticias
 def run_scraper_bleeping():
     with sync_playwright() as p:
         browser = p.chromium.launch(
-            headless=False
+            headless=True
         )
         page = browser.new_page()
 
