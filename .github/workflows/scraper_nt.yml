@@ -32,4 +32,4 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
           ID_CANAL: ${{ secrets.ID_CANAL }}
-        run: python -m backend.scripts.run_tecnoblog
+        run: python -m backend.scripts.run_scraper
