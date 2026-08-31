@@ -9,7 +9,8 @@ class Noticias(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     titulo: Mapped[str] = mapped_column(String(255), nullable=False)
     fonte: Mapped[str] = mapped_column(String(100), nullable=False)
-    data_publicacao: Mapped[str] = mapped_column()
+    data_publicacao: Mapped[str] = mapped_column(String)
+    resumo: Mapped[str] = mapped_column(String)
     link: Mapped[str] = mapped_column(nullable=False, unique=True)
 
     status: Mapped[str] = mapped_column(
