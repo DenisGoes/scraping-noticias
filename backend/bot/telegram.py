@@ -20,6 +20,7 @@ ID_CANAL = os.getenv("ID_CANAL")
 
 bot = telebot.TeleBot(API_TOKEN)
 
+
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
     with Session() as session:
@@ -28,16 +29,11 @@ def callback(call):
 
             acao, noticia_id = call.data.split(":")
             noticia = session.scalar(
-                select(Noticias).where(
-                    Noticias.id == int(noticia_id)
-                )
+                select(Noticias).where(Noticias.id == int(noticia_id))
             )
 
             if not noticia:
-                bot.answer_callback_query(
-                    call.id,
-                    "Notícia não encontrada!"
-                )
+                bot.answer_callback_query(call.id, "Notícia não encontrada!")
                 return
 
             if acao == "LIDA":
@@ -49,20 +45,14 @@ def callback(call):
                 noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
 
             else:
-                bot.answer_callback_query(
-                    call.id,
-                    "Ação inválida!"
-                )
+                bot.answer_callback_query(call.id, "Ação inválida!")
                 return
 
             session.commit()
 
             if noticia.telegram_message_id:
                 try:
-                    bot.delete_message(
-                        ID_CANAL,
-                        noticia.telegram_message_id
-                    )
+                    bot.delete_message(ID_CANAL, noticia.telegram_message_id)
 
                     print(
                         f"🗑️ Mensagem {noticia.telegram_message_id} "
@@ -72,43 +62,83 @@ def callback(call):
                 except ApiTelegramException as e:
                     print(f"Erro ao deletar mensagem: {e}")
 
-            bot.answer_callback_query(
-                call.id,
-                f"Notícia marcada como {acao}"
-            )
+            bot.answer_callback_query(call.id, f"Notícia marcada como {acao}")
 
         except Exception as e:
             session.rollback()
             print(f"❌ Erro no callback: {e}")
 
 
+def dividir_texto(texto, limite=4000):
+    partes = []
+
+    while len(texto) > limite:
+        corte = texto.rfind("\n", 0, limite)
+
+        if corte == -1:
+            corte = limite
+
+        partes.append(texto[:corte])
+        texto = texto[corte:]
+
+    if texto:
+        partes.append(texto)
+
+    return partes
+
+
+URL_NOTEBOOKLM = (
+    "https://notebook.google.com/notebook/932f141b-faa3-42b7-94d7-1d39bf59c8ac"
+)
+
+
+def enviar_roteiro(roteiro):
+    partes = dividir_texto(roteiro)
+
+    try:
+        for i, parte in enumerate(partes):
+
+            if i == 0:
+                markup = quick_markup(
+                    {"🎙️ Gerar Áudio": {"url": URL_NOTEBOOKLM}}, row_width=1
+                )
+
+                mensagem = "🎙️ <b>ROTEIRO DO DIA</b>\n\n" f"{parte}"
+
+                bot.send_message(
+                    ID_CANAL, mensagem, reply_markup=markup, parse_mode="HTML"
+                )
+
+            else:
+                bot.send_message(ID_CANAL, parte)
+
+            time.sleep(1)
+
+        print(f"🎙️ Roteiro enviado para o Telegram em {len(partes)} partes.")
+        return True
+
+    except Exception as e:
+        print(f"❌ Erro ao enviar roteiro: {e}")
+        return False
+
+
 def enviar_mensagem(noticia):
     markup = quick_markup(
-    {
-        "✅ LIDA": {
-            "callback_data": f"LIDA:{noticia.id}"
+        {
+            "✅ LIDA": {"callback_data": f"LIDA:{noticia.id}"},
+            "❌ REJEITADA": {"callback_data": f"REJEITADA:{noticia.id}"},
         },
-        "❌ REJEITADA": {
-            "callback_data": f"REJEITADA:{noticia.id}"
-        }
-    },
-    row_width=1
-)
+        row_width=1,
+    )
 
     try:
         message = bot.send_message(
-            ID_CANAL,
-            noticia.mensagem,
-            reply_markup=markup,
-            parse_mode="HTML"
+            ID_CANAL, noticia.mensagem, reply_markup=markup, parse_mode="HTML"
         )
 
         noticia.telegram_message_id = message.message_id
 
-        print(
-            f"📤 Notícia {noticia.id} enviada. "
-            f"Telegram ID: {message.message_id}"
-        )
+        print(f"📤 Notícia {noticia.id} enviada. " f"Telegram ID: {message.message_id}")
 
         return True
 
@@ -121,9 +151,7 @@ def enviar_noticias():
     with Session() as session:
         try:
             noticias = session.scalars(
-                select(Noticias).where(
-                    Noticias.status == "NOVA"
-                )
+                select(Noticias).where(Noticias.status == "NOVA")
             ).all()
 
             if not noticias:
@@ -137,9 +165,7 @@ def enviar_noticias():
                     noticia.status = "ENVIADA"
                     session.commit()
 
-                    print(
-                        f"✅ Notícia {noticia.id} marcada como ENVIADA"
-                    )
+                    print(f"✅ Notícia {noticia.id} marcada como ENVIADA")
 
                 else:
                     session.rollback()
