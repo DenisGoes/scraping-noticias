@@ -47,6 +47,7 @@ def run_scraper_tec():
                     titulo=titulo, 
                     fonte=fonte, 
                     data_publicacao=data_publicacao, 
+                    resumo=None,
                     link=link,
                     mensagem=mensagem
                 )
