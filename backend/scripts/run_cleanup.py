@@ -1,6 +1,6 @@
 from backend.services.clean_db import clean_dados
 
-if __name__ == "__main___":
+if __name__ == "__main__":
     quantidade = clean_dados()
 
     print(
