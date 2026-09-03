@@ -2,14 +2,18 @@ name: Scraper Notícias
 
 on:
   schedule:
-    - cron: "0 9 * * *" # Executa todos os dias às 06:00 no horário de Brasília
+    # 06:00 no horário de Brasília (09:00 UTC)
+    - cron: "0 9 * * *"
+
   workflow_dispatch:
 
 jobs:
   scraper:
+    name: Executar pipeline de notícias
     runs-on: ubuntu-latest
 
     steps:
+
       - name: Baixar código
         uses: actions/checkout@v4
 
@@ -32,4 +36,22 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
           ID_CANAL: ${{ secrets.ID_CANAL }}
-        run: python -m backend.scripts.run_scraper
+        run: |
+          python -m backend.scripts.run_scraper
+
+      - name: Gerar roteiro
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ID_CANAL: ${{ secrets.ID_CANAL }}
+        run: |
+          python -m backend.scripts.run_roteiro
+
+      - name: Executar cleanup
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ID_CANAL: ${{ secrets.ID_CANAL }}
+        run: |
+          python -m backend.scripts.run_cleanup
