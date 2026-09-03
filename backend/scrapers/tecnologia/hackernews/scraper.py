@@ -20,6 +20,9 @@ def run_scraper_hacker():
                 titulo = card.locator(".home-title").inner_text()
                 fonte = "hacker news"
 
+                resumo = card.locator(".home-desc").inner_text()
+                print(resumo)
+
                 link_locator = card.locator("xpath=ancestor::a[1]")
 
                 if link_locator.count() == 0:
@@ -35,6 +38,7 @@ def run_scraper_hacker():
                 print(f"""
                     Titulo: {titulo}
                     Fonte: {fonte}
+                    Resumo: {resumo}
                     Link: {link}
                     """)
 
@@ -49,6 +53,7 @@ def run_scraper_hacker():
                     titulo=titulo,
                     fonte=fonte,
                     data_publicacao=None,
+                    resumo=resumo,
                     link=link,
                     mensagem=mensagem,
                 )
