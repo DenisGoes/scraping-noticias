@@ -27,6 +27,9 @@ def run_scraper_bleeping():
                 data_publicacao = card.locator(".bc_news_date").inner_text()
                 # print(data_publicacao)
 
+                resumo = card.locator(".bc_latest_news_text p").inner_text()
+                # print(resumo)
+
                 link = card.locator(".bc_latest_news_text h4 a").get_attribute("href")
                 # print(link)
 
@@ -42,6 +45,7 @@ def run_scraper_bleeping():
                     Titulo: {titulo}
                     Fonte: {fonte}
                     Data publicação: {data_publicacao}
+                    Resumo: {resumo}
                     Link: {link}
                 """)
                 
@@ -49,6 +53,7 @@ def run_scraper_bleeping():
                     titulo=titulo, 
                     fonte=fonte, 
                     data_publicacao=data_publicacao, 
+                    resumo=resumo,
                     link=link,
                     mensagem=mensagem
                 )
