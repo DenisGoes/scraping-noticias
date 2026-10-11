@@ -10,9 +10,9 @@ O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também
 2. Playwright coleta título, fonte, data, resumo e link. A URL única evita duplicar notícias que ainda estejam no banco.
 3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com os botões **Aplicada**, **Salva**, **Rejeitada** e **Gerar relatório**.
 4. **Aplicada** e **Salva** atualizam o status da notícia no banco. **Rejeitada** apaga a mensagem do canal e remove o registro do banco.
-5. **Gerar relatório** envia somente a notícia daquele botão ao Gemini. O resultado é publicado no Telegram com um botão que abre o NotebookLM.
+5. **Gerar relatório** envia somente a notícia daquele botão ao Gemini, que cria um roteiro de podcast. Ao final do roteiro, o bot publica o botão do NotebookLM para você copiar o roteiro e gerar o podcast manualmente.
 
-O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar relatório** na notícia desejada. Cada acionamento gera o relatório usando apenas aquela notícia. Ela só é marcada como utilizada depois que o Telegram confirma o envio; se houver falha, poderá ser tentada novamente.
+O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar relatório** na notícia desejada. Cada acionamento gera o roteiro usando apenas aquela notícia. Depois de copiar o roteiro e abrir o NotebookLM pelo botão enviado ao final, você inicia a geração do podcast. A notícia só é marcada como utilizada depois que o Telegram confirma o envio do roteiro; se houver falha, poderá ser tentada novamente.
 
 ## Tecnologias
 

@@ -173,22 +173,23 @@ def enviar_roteiro(roteiro):
 
     try:
         for i, parte in enumerate(partes):
-
             if i == 0:
-                markup = quick_markup(
-                    {"📒 Abrir no NotebookLM": {"url": URL_NOTEBOOKLM}}, row_width=1
-                )
-
                 mensagem = "🎙️ ROTEIRO DO DIA\n\n" f"{parte}"
-
-                bot.send_message(
-                    ID_CANAL, mensagem, reply_markup=markup
-                )
+                bot.send_message(ID_CANAL, mensagem)
 
             else:
                 bot.send_message(ID_CANAL, parte)
 
             time.sleep(1)
+
+        markup = quick_markup(
+            {"📒 Abrir o NotebookLM": {"url": URL_NOTEBOOKLM}}, row_width=1
+        )
+        bot.send_message(
+            ID_CANAL,
+            "📋 Copie o roteiro acima e abra o NotebookLM para gerar o podcast.",
+            reply_markup=markup,
+        )
 
         print(f"🎙️ Roteiro enviado para o Telegram em {len(partes)} partes.")
         return True

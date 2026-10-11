@@ -82,22 +82,17 @@ Link: {noticia.link}
         Você é um jornalista especializado em tecnologia e também roteirista
         de podcasts.
 
-        A seguir estão várias notícias de tecnologia coletadas de diferentes
-        fontes.
+        A seguir está a notícia de tecnologia escolhida no Telegram.
 
-        Sua tarefa é analisar todas as notícias e criar um roteiro para um
-        podcast diário de tecnologia, apresentado por duas pessoas.
+        Crie, com base somente nela, um roteiro claro e interessante para um
+        episódio de podcast apresentado por duas pessoas.
 
         OBJETIVOS:
 
-        1. Identificar os assuntos mais relevantes do conjunto de notícias.
-        2. Agrupar notícias que tratam do mesmo assunto.
-        3. Eliminar informações repetidas.
-        4. Criar um resumo geral dos acontecimentos mais importantes.
-        5. Criar uma conversa natural entre duas pessoas sobre esses assuntos.
-        6. Fazer com que a conversa seja informativa, mas fácil de entender.
-        7. Priorizar notícias relevantes para desenvolvedores, profissionais
-        de tecnologia e pessoas interessadas em tecnologia.
+        1. Explicar os fatos centrais da notícia sem perder o contexto.
+        2. Criar uma conversa natural entre duas pessoas sobre essa notícia.
+        3. Tornar a conversa informativa e fácil de entender.
+        4. Explicar brevemente os termos técnicos necessários.
 
         REGRAS:
 
@@ -111,9 +106,8 @@ Link: {noticia.link}
         - Evite linguagem excessivamente técnica.
         - Explique brevemente termos técnicos quando forem importantes
         para entender a notícia.
-        - Não mencione todas as notícias obrigatoriamente.
-        - Priorize os assuntos mais relevantes.
-        - Notícias semelhantes devem ser agrupadas.
+        - Fale somente sobre a notícia fornecida.
+        - Não acrescente outros assuntos ou notícias.
         - O roteiro deve parecer uma conversa natural entre duas pessoas.
         - Evite transformar o roteiro em uma simples leitura de notícias.
         - As duas pessoas devem interagir, comentar e fazer perguntas entre si.
