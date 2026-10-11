@@ -8,11 +8,11 @@ O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também
 
 1. O GitHub Actions executa os scrapers do **Tecnoblog**, **BleepingComputer** e **The Hacker News** diariamente às 06:00 no horário de Brasília (09:00 UTC).
 2. Playwright coleta título, fonte, data, resumo e link. A URL única evita duplicar notícias que ainda estejam no banco.
-3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com os botões **Aplicada**, **Salva**, **Rejeitada** e **Gerar relatório**.
-4. **Aplicada** e **Salva** atualizam o status da notícia no banco. **Rejeitada** apaga a mensagem do canal e remove o registro do banco.
-5. **Gerar relatório** envia somente a notícia daquele botão ao Gemini, que cria um roteiro de podcast. Ao final do roteiro, o bot publica o botão do NotebookLM para você copiar o roteiro e gerar o podcast manualmente.
+3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com os botões **Já li**, **Rejeitada** e **Gerar roteiro**.
+4. **Já li** altera o status para `LIDA`. **Rejeitada** apaga a mensagem do canal e remove o registro do banco.
+5. **Gerar roteiro** envia somente a notícia daquele botão ao Gemini, que cria um roteiro de podcast. Ao final do roteiro, o bot publica o botão do NotebookLM para você copiar o roteiro e gerar o podcast manualmente.
 
-O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar relatório** na notícia desejada. Cada acionamento gera o roteiro usando apenas aquela notícia. Depois de copiar o roteiro e abrir o NotebookLM pelo botão enviado ao final, você inicia a geração do podcast. A notícia só é marcada como utilizada depois que o Telegram confirma o envio do roteiro; se houver falha, poderá ser tentada novamente.
+O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar roteiro** na notícia desejada. Cada acionamento gera o roteiro usando apenas aquela notícia. Depois de copiar o roteiro e abrir o NotebookLM pelo botão enviado ao final, você inicia a geração do podcast. A notícia só é marcada como utilizada depois que o Telegram confirma o envio do roteiro; se houver falha, poderá ser tentada novamente.
 
 ## Tecnologias
 
@@ -84,7 +84,7 @@ Inicie a API e o endpoint do webhook:
 uvicorn backend.main:app --reload
 ```
 
-O endpoint de saúde está em `/`. O webhook recebe atualizações em `POST /telegram/webhook`. A variável `WEBHOOK_URL` pode conter o domínio público da aplicação; o script acrescenta `/telegram/webhook` ao configurar o Telegram. A raiz também aceita `POST` para manter compatibilidade com webhooks que já foram cadastrados apontando para `/`.
+O endpoint de saúde está em `/`. O webhook recebe atualizações em `POST /telegram/webhook`. A variável `WEBHOOK_URL` pode conter o domínio público da aplicação; o script acrescenta `/telegram/webhook` ao configurar o Telegram e habilita os tipos `message` e `callback_query` necessários aos botões. Execute esse script depois de implantar a aplicação ou alterar a configuração do webhook. A raiz também aceita `POST` para manter compatibilidade com webhooks que já foram cadastrados apontando para `/`.
 
 ```bash
 python -m backend.scripts.set_webhook

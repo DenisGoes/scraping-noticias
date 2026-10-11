@@ -8,6 +8,7 @@ from telebot.apihelper import ApiTelegramException
 
 from dotenv import load_dotenv
 from sqlalchemy import select
+from datetime import datetime, timedelta, UTC
 
 from backend.database.session import Session
 from backend.database.models import Noticias
@@ -33,7 +34,7 @@ def _gerar_relatorio_em_background(noticia_id):
                 bot.send_message(ID_CANAL, "Notícia não encontrada no banco de dados.")
                 return
             if noticia.roteiro_gerado_em is not None:
-                bot.send_message(ID_CANAL, "O relatório desta notícia já foi gerado.")
+                bot.send_message(ID_CANAL, "O roteiro desta notícia já foi gerado.")
                 return
             noticia_id = noticia.id
             noticia_para_gerar = noticia
@@ -45,14 +46,14 @@ def _gerar_relatorio_em_background(noticia_id):
         else:
             bot.send_message(
                 ID_CANAL,
-                "Não foi possível gerar ou enviar o relatório. Tente novamente mais tarde.",
+                "Não foi possível gerar ou enviar o roteiro. Tente novamente mais tarde.",
             )
     except Exception as e:
         print(f"Erro ao gerar relatório: {e}")
         try:
             bot.send_message(
                 ID_CANAL,
-                "O Gemini não conseguiu gerar o relatório agora. Tente novamente mais tarde.",
+                "O Gemini não conseguiu gerar o roteiro agora. Tente novamente mais tarde.",
             )
         except Exception as send_error:
             print(f"Erro ao avisar sobre a falha do relatório: {send_error}")
@@ -62,11 +63,34 @@ def _gerar_relatorio_em_background(noticia_id):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
+    try:
+        _processar_callback(call)
+    except Exception as e:
+        print(f"❌ Falha ao processar callback {call.data!r}: {e}")
+        try:
+            bot.answer_callback_query(
+                call.id,
+                "Não foi possível processar o botão. Tente novamente.",
+                show_alert=True,
+            )
+        except Exception as answer_error:
+            print(f"Erro ao responder callback do Telegram: {answer_error}")
+
+
+def _processar_callback(call):
     callback_data = call.data or ""
     print(f"Callback do Telegram recebido: {callback_data}")
 
-    if callback_data == "GERAR_RELATORIO":
-        # Compatibilidade com mensagens antigas, cujo botão não carregava o ID.
+    if callback_data.startswith(("GERAR_ROTEIRO:", "GERAR_RELATORIO:")):
+        try:
+            noticia_id = int(callback_data.split(":", 1)[1])
+        except ValueError:
+            bot.answer_callback_query(
+                call.id, "Botão de roteiro inválido.", show_alert=True
+            )
+            return
+    elif callback_data in ("GERAR_ROTEIRO", "GERAR_RELATORIO"):
+        # Compatibilidade com mensagens antigas sem ID no callback_data.
         with Session() as session:
             noticia = session.scalar(
                 select(Noticias).where(
@@ -79,12 +103,6 @@ def callback(call):
                 call.id, "Não encontrei a notícia desta mensagem.", show_alert=True
             )
             return
-    elif callback_data.startswith("GERAR_RELATORIO:"):
-        try:
-            noticia_id = int(callback_data.split(":", 1)[1])
-        except ValueError:
-            bot.answer_callback_query(call.id, "Botão de relatório inválido.", show_alert=True)
-            return
     else:
         noticia_id = None
 
@@ -93,20 +111,30 @@ def callback(call):
             bot.answer_callback_query(call.id, "Um relatório já está sendo gerado.")
             return
 
-        bot.answer_callback_query(call.id, "Enviando esta notícia ao Gemini…")
-        Thread(
+        worker = Thread(
             target=_gerar_relatorio_em_background,
             args=(noticia_id,),
             daemon=True,
-        ).start()
+        )
+        try:
+            worker.start()
+        except Exception:
+            _relatorio_lock.release()
+            raise
+        try:
+            bot.answer_callback_query(
+                call.id, "Enviando esta notícia para gerar o roteiro…"
+            )
+        except Exception as e:
+            print(f"Erro ao confirmar clique de gerar roteiro: {e}")
         return
 
     with Session() as session:
         try:
             acao, noticia_id = callback_data.split(":", 1)
-            if acao == "LIDA":
-                # Botões enviados antes da troca do status LIDA para APLICADA.
-                acao = "APLICADA"
+            if acao in ("APLICADA", "SALVA"):
+                # Compatibilidade com botões de versões anteriores.
+                acao = "LIDA"
             noticia = session.scalar(
                 select(Noticias).where(Noticias.id == int(noticia_id))
             )
@@ -115,9 +143,9 @@ def callback(call):
                 bot.answer_callback_query(call.id, "Notícia não encontrada!")
                 return
 
-            if acao in ("APLICADA", "SALVA"):
-                noticia.status = acao
-                noticia.remover_em = None
+            if acao == "LIDA":
+                noticia.status = "LIDA"
+                noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
 
             elif acao == "REJEITADA":
                 telegram_message_id = noticia.telegram_message_id
@@ -137,11 +165,19 @@ def callback(call):
 
             session.commit()
 
-            bot.answer_callback_query(call.id, f"Notícia marcada como {acao}")
+            bot.answer_callback_query(call.id, "Notícia marcada como lida.")
 
         except Exception as e:
             session.rollback()
             print(f"❌ Erro no callback: {e}")
+            try:
+                bot.answer_callback_query(
+                    call.id,
+                    "Não foi possível processar o botão. Tente novamente.",
+                    show_alert=True,
+                )
+            except Exception as answer_error:
+                print(f"Erro ao responder callback do Telegram: {answer_error}")
 
 
 def dividir_texto(texto, limite=4000):
@@ -202,12 +238,11 @@ def enviar_roteiro(roteiro):
 def enviar_mensagem(noticia):
     markup = quick_markup(
         {
-            "✅ APLICADA": {"callback_data": f"APLICADA:{noticia.id}"},
-            "💾 SALVA": {"callback_data": f"SALVA:{noticia.id}"},
+            "✅ JÁ LI": {"callback_data": f"LIDA:{noticia.id}"},
             "❌ REJEITADA": {"callback_data": f"REJEITADA:{noticia.id}"},
-            "📝 GERAR RELATÓRIO": {"callback_data": f"GERAR_RELATORIO:{noticia.id}"},
+            "📝 GERAR ROTEIRO": {"callback_data": f"GERAR_ROTEIRO:{noticia.id}"},
         },
-        row_width=2,
+        row_width=1,
     )
 
     try:

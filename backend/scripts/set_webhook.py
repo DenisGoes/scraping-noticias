@@ -14,6 +14,11 @@ if not WEBHOOK_URL.endswith("/telegram/webhook"):
     WEBHOOK_URL += "/telegram/webhook"
 
 bot.remove_webhook()
-bot.set_webhook(url=WEBHOOK_URL)
+webhook_configurado = bot.set_webhook(
+    url=WEBHOOK_URL,
+    allowed_updates=["message", "callback_query"],
+)
+if not webhook_configurado:
+    raise RuntimeError("O Telegram não confirmou a configuração do webhook.")
 
 print(f"WebHook configurado: {WEBHOOK_URL}")
