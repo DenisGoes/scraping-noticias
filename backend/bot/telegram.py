@@ -62,8 +62,33 @@ def _gerar_relatorio_em_background(noticia_id):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
-    if call.data.startswith("GERAR_RELATORIO:"):
-        noticia_id = int(call.data.split(":", 1)[1])
+    callback_data = call.data or ""
+    print(f"Callback do Telegram recebido: {callback_data}")
+
+    if callback_data == "GERAR_RELATORIO":
+        # Compatibilidade com mensagens antigas, cujo botão não carregava o ID.
+        with Session() as session:
+            noticia = session.scalar(
+                select(Noticias).where(
+                    Noticias.telegram_message_id == call.message.message_id
+                )
+            ) if call.message else None
+            noticia_id = noticia.id if noticia else None
+        if noticia_id is None:
+            bot.answer_callback_query(
+                call.id, "Não encontrei a notícia desta mensagem.", show_alert=True
+            )
+            return
+    elif callback_data.startswith("GERAR_RELATORIO:"):
+        try:
+            noticia_id = int(callback_data.split(":", 1)[1])
+        except ValueError:
+            bot.answer_callback_query(call.id, "Botão de relatório inválido.", show_alert=True)
+            return
+    else:
+        noticia_id = None
+
+    if noticia_id is not None:
         if not _relatorio_lock.acquire(blocking=False):
             bot.answer_callback_query(call.id, "Um relatório já está sendo gerado.")
             return
@@ -78,9 +103,10 @@ def callback(call):
 
     with Session() as session:
         try:
-            print(f"Callback recebido: {call.data}")
-
-            acao, noticia_id = call.data.split(":", 1)
+            acao, noticia_id = callback_data.split(":", 1)
+            if acao == "LIDA":
+                # Botões enviados antes da troca do status LIDA para APLICADA.
+                acao = "APLICADA"
             noticia = session.scalar(
                 select(Noticias).where(Noticias.id == int(noticia_id))
             )
