@@ -1,5 +1,5 @@
 import os
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -10,17 +10,25 @@ from backend.database.models import Noticias
 
 load_dotenv()
 
+LIMITE_NOTICIAS_ROTEIRO = 30
+JANELA_NOTICIAS_ROTEIRO = timedelta(days=2)
+
+
 def buscar_noticias_para_roteiro():
-    """Retorna notícias ainda não usadas em roteiro, mantendo a sessão aberta só na consulta."""
+    """Retorna notícias recentes ainda não usadas em um roteiro."""
+    coletadas_desde = datetime.now(UTC) - JANELA_NOTICIAS_ROTEIRO
     with Session() as session:
-        return session.scalars(
+        noticias = session.scalars(
             select(Noticias)
             .where(
                 Noticias.roteiro_gerado_em.is_(None),
                 Noticias.status.in_(("NOVA", "ENVIADA")),
+                Noticias.coletado_em >= coletadas_desde,
             )
-            .order_by(Noticias.coletado_em, Noticias.id)
+            .order_by(Noticias.coletado_em.desc(), Noticias.id.desc())
+            .limit(LIMITE_NOTICIAS_ROTEIRO)
         ).all()
+        return list(reversed(noticias))
 
 
 def marcar_noticias_como_roteirizadas(ids):
@@ -57,10 +65,14 @@ def gerar_roteiro(noticias=None):
     dados_noticias = ""
 
     for noticia in noticias:
+        resumo = (noticia.resumo or "não informado").strip()
+        if len(resumo) > 1200:
+            resumo = resumo[:1197].rstrip() + "..."
+
         dados_noticias += f"""Título: {noticia.titulo}
 Fonte: {noticia.fonte}
 Data de publicação: {noticia.data_publicacao or "não informada"}
-Resumo: {noticia.resumo or "não informado"}
+Resumo: {resumo}
 Link: {noticia.link}
 ---
 """

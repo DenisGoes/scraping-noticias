@@ -12,7 +12,7 @@ O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também
 4. O Gemini reúne as notícias pendentes em um resumo e em uma conversa entre dois apresentadores. O roteiro também é publicado no Telegram, com um botão que abre o NotebookLM.
 5. Após três dias, a limpeza remove notícias revisadas (lidas ou rejeitadas) cujo prazo venceu. Notícias pendentes e enviadas não são apagadas pela limpeza.
 
-O roteiro usa apenas notícias ainda não incluídas em um episódio. Elas só são marcadas como utilizadas depois que o Telegram confirma o envio; se houver falha, poderão ser tentadas novamente.
+O roteiro considera notícias ainda não incluídas em um episódio e coletadas nas últimas 48 horas, limitado às 30 mais recentes. Elas só são marcadas como utilizadas depois que o Telegram confirma o envio; se houver falha, poderão ser tentadas novamente.
 
 ## Tecnologias
 
