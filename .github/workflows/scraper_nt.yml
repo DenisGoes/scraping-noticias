@@ -44,15 +44,6 @@ jobs:
         run: |
           python -m backend.scripts.run_scraper
 
-      - name: Gerar roteiro
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-          ID_CANAL: ${{ secrets.ID_CANAL }}
-        run: |
-          python -m backend.scripts.run_roteiro
-
       - name: Executar cleanup
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

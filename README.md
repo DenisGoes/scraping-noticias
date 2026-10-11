@@ -8,11 +8,11 @@ O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também
 
 1. O GitHub Actions executa os scrapers do **Tecnoblog**, **BleepingComputer** e **The Hacker News** diariamente às 06:00 no horário de Brasília (09:00 UTC).
 2. Playwright coleta título, fonte, data, resumo e link. A URL única evita duplicar notícias que ainda estejam no banco.
-3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com ações para marcar como **LIDA** ou **REJEITADA**.
-4. O Gemini reúne as notícias pendentes em um resumo e em uma conversa entre dois apresentadores. O roteiro também é publicado no Telegram, com um botão que abre o NotebookLM.
-5. Após três dias, a limpeza remove notícias revisadas (lidas ou rejeitadas) cujo prazo venceu. Notícias pendentes e enviadas não são apagadas pela limpeza.
+3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com os botões **Aplicada**, **Salva**, **Rejeitada** e **Gerar relatório**.
+4. **Aplicada** e **Salva** atualizam o status da notícia no banco. **Rejeitada** apaga a mensagem do canal e remove o registro do banco.
+5. **Gerar relatório** envia somente a notícia daquele botão ao Gemini. O resultado é publicado no Telegram com um botão que abre o NotebookLM.
 
-O roteiro considera notícias ainda não incluídas em um episódio e coletadas nas últimas 48 horas, limitado às 30 mais recentes. Elas só são marcadas como utilizadas depois que o Telegram confirma o envio; se houver falha, poderão ser tentadas novamente.
+O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar relatório** na notícia desejada. Cada acionamento gera o relatório usando apenas aquela notícia. Ela só é marcada como utilizada depois que o Telegram confirma o envio; se houver falha, poderá ser tentada novamente.
 
 ## Tecnologias
 
@@ -100,7 +100,7 @@ python -m backend.scripts.run_cleanup
 
 ## Execução automática no GitHub
 
-O workflow `scraper_nt.yml` prepara o banco, coleta e publica notícias, gera o roteiro e executa a limpeza. Ele roda diariamente às 09:00 UTC (06:00 em Brasília) e também pode ser iniciado manualmente.
+O workflow `scraper_nt.yml` prepara o banco, coleta e publica notícias e executa a limpeza. Ele roda diariamente às 09:00 UTC (06:00 em Brasília) e também pode ser iniciado manualmente. A geração do relatório é acionada pelo botão no Telegram.
 
 Cadastre nos **Secrets** do repositório:
 

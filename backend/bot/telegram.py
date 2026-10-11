@@ -1,5 +1,6 @@
 import os
 import time
+from threading import Lock, Thread
 
 import telebot
 from telebot.util import quick_markup
@@ -10,8 +11,10 @@ from sqlalchemy import select
 
 from backend.database.session import Session
 from backend.database.models import Noticias
-
-from datetime import datetime, timedelta, UTC
+from backend.services.gerador_roteiro import (
+    gerar_roteiro,
+    marcar_noticias_como_roteirizadas,
+)
 
 load_dotenv()
 
@@ -19,15 +22,65 @@ API_TOKEN = os.getenv("API_TOKEN")
 ID_CANAL = os.getenv("ID_CANAL")
 
 bot = telebot.TeleBot(API_TOKEN)
+_relatorio_lock = Lock()
+
+
+def _gerar_relatorio_em_background(noticia_id):
+    try:
+        with Session() as session:
+            noticia = session.get(Noticias, noticia_id)
+            if noticia is None:
+                bot.send_message(ID_CANAL, "Notícia não encontrada no banco de dados.")
+                return
+            if noticia.roteiro_gerado_em is not None:
+                bot.send_message(ID_CANAL, "O relatório desta notícia já foi gerado.")
+                return
+            noticia_id = noticia.id
+            noticia_para_gerar = noticia
+
+        roteiro = gerar_roteiro([noticia_para_gerar])
+        if roteiro and enviar_roteiro(roteiro):
+            marcar_noticias_como_roteirizadas([noticia_id])
+            print(f"Notícia {noticia_id} marcada como usada no relatório.")
+        else:
+            bot.send_message(
+                ID_CANAL,
+                "Não foi possível gerar ou enviar o relatório. Tente novamente mais tarde.",
+            )
+    except Exception as e:
+        print(f"Erro ao gerar relatório: {e}")
+        try:
+            bot.send_message(
+                ID_CANAL,
+                "O Gemini não conseguiu gerar o relatório agora. Tente novamente mais tarde.",
+            )
+        except Exception as send_error:
+            print(f"Erro ao avisar sobre a falha do relatório: {send_error}")
+    finally:
+        _relatorio_lock.release()
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
+    if call.data.startswith("GERAR_RELATORIO:"):
+        noticia_id = int(call.data.split(":", 1)[1])
+        if not _relatorio_lock.acquire(blocking=False):
+            bot.answer_callback_query(call.id, "Um relatório já está sendo gerado.")
+            return
+
+        bot.answer_callback_query(call.id, "Enviando esta notícia ao Gemini…")
+        Thread(
+            target=_gerar_relatorio_em_background,
+            args=(noticia_id,),
+            daemon=True,
+        ).start()
+        return
+
     with Session() as session:
         try:
             print(f"Callback recebido: {call.data}")
 
-            acao, noticia_id = call.data.split(":")
+            acao, noticia_id = call.data.split(":", 1)
             noticia = session.scalar(
                 select(Noticias).where(Noticias.id == int(noticia_id))
             )
@@ -36,31 +89,27 @@ def callback(call):
                 bot.answer_callback_query(call.id, "Notícia não encontrada!")
                 return
 
-            if acao == "LIDA":
-                noticia.status = "LIDA"
-                noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
+            if acao in ("APLICADA", "SALVA"):
+                noticia.status = acao
+                noticia.remover_em = None
 
             elif acao == "REJEITADA":
-                noticia.status = "REJEITADA"
-                noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
+                telegram_message_id = noticia.telegram_message_id
+                if telegram_message_id:
+                    try:
+                        bot.delete_message(ID_CANAL, telegram_message_id)
+                    except ApiTelegramException as e:
+                        print(f"Erro ao deletar mensagem do Telegram: {e}")
+                session.delete(noticia)
+                session.commit()
+                bot.answer_callback_query(call.id, "Notícia removida do Telegram e do banco.")
+                return
 
             else:
                 bot.answer_callback_query(call.id, "Ação inválida!")
                 return
 
             session.commit()
-
-            if noticia.telegram_message_id:
-                try:
-                    bot.delete_message(ID_CANAL, noticia.telegram_message_id)
-
-                    print(
-                        f"🗑️ Mensagem {noticia.telegram_message_id} "
-                        f"deletada do Telegram"
-                    )
-
-                except ApiTelegramException as e:
-                    print(f"Erro ao deletar mensagem: {e}")
 
             bot.answer_callback_query(call.id, f"Notícia marcada como {acao}")
 
@@ -126,10 +175,12 @@ def enviar_roteiro(roteiro):
 def enviar_mensagem(noticia):
     markup = quick_markup(
         {
-            "✅ LIDA": {"callback_data": f"LIDA:{noticia.id}"},
+            "✅ APLICADA": {"callback_data": f"APLICADA:{noticia.id}"},
+            "💾 SALVA": {"callback_data": f"SALVA:{noticia.id}"},
             "❌ REJEITADA": {"callback_data": f"REJEITADA:{noticia.id}"},
+            "📝 GERAR RELATÓRIO": {"callback_data": f"GERAR_RELATORIO:{noticia.id}"},
         },
-        row_width=1,
+        row_width=2,
     )
 
     try:
