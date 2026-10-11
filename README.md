@@ -84,7 +84,7 @@ Inicie a API e o endpoint do webhook:
 uvicorn backend.main:app --reload
 ```
 
-O endpoint de saúde está em `/`. O webhook recebe atualizações em `POST /telegram/webhook`. Configure o endereço público do webhook com:
+O endpoint de saúde está em `/`. O webhook recebe atualizações em `POST /telegram/webhook`. A variável `WEBHOOK_URL` pode conter o domínio público da aplicação; o script acrescenta `/telegram/webhook` ao configurar o Telegram. A raiz também aceita `POST` para manter compatibilidade com webhooks que já foram cadastrados apontando para `/`.
 
 ```bash
 python -m backend.scripts.set_webhook

@@ -6,6 +6,12 @@ load_dotenv()
 
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
 
+if not WEBHOOK_URL:
+    raise RuntimeError("WEBHOOK_URL não configurada.")
+
+WEBHOOK_URL = WEBHOOK_URL.rstrip("/")
+if not WEBHOOK_URL.endswith("/telegram/webhook"):
+    WEBHOOK_URL += "/telegram/webhook"
 
 bot.remove_webhook()
 bot.set_webhook(url=WEBHOOK_URL)
