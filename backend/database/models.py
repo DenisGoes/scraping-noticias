@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Mapped, mapped_column
 from backend.database.session import Base
-from sqlalchemy import DateTime, String
+from sqlalchemy import Boolean, DateTime, String, Text
 from datetime import datetime, UTC
 
 class Noticias(Base):
@@ -9,9 +9,9 @@ class Noticias(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     titulo: Mapped[str] = mapped_column(String(255), nullable=False)
     fonte: Mapped[str] = mapped_column(String(100), nullable=False)
-    data_publicacao: Mapped[str] = mapped_column(String)
-    resumo: Mapped[str] = mapped_column(String)
-    link: Mapped[str] = mapped_column(nullable=False, unique=True)
+    data_publicacao: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    resumo: Mapped[str | None] = mapped_column(Text, nullable=True)
+    link: Mapped[str] = mapped_column(Text, nullable=False, unique=True)
 
     status: Mapped[str] = mapped_column(
         String(20),
@@ -30,7 +30,11 @@ class Noticias(Base):
         nullable=True,
     )
 
-    enviado_telegram: Mapped[bool] = mapped_column(default=False)
-    telegram_message_id: Mapped[int] = mapped_column(nullable=True)
-    mensagem: Mapped[str] = mapped_column(nullable=False)
-    
+    enviado_telegram: Mapped[bool] = mapped_column(
+        Boolean, default=False, nullable=False
+    )
+    telegram_message_id: Mapped[int | None] = mapped_column(nullable=True)
+    mensagem: Mapped[str] = mapped_column(Text, nullable=False)
+    roteiro_gerado_em: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, index=True
+    )

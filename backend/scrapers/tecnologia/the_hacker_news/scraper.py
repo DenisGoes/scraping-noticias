@@ -1,9 +1,9 @@
 from playwright.sync_api import sync_playwright
-from backend.database.crud.crud_tecnoblog import salvar_noticia
+from backend.database.crud.noticias import salvar_noticia
 from backend.bot.telegram import enviar_noticias
 
 
-def run_scraper_hacker():
+def run_scraper_the_hacker_news():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()

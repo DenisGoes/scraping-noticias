@@ -31,6 +31,11 @@ jobs:
         run: |
           playwright install chromium --with-deps
 
+      - name: Criar tabelas e aplicar migrações do banco
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m backend.scripts.run_create_database
+
       - name: Executar scraper
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

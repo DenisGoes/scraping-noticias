@@ -1,5 +1,5 @@
 from playwright.sync_api import sync_playwright
-from backend.database.crud.crud_tecnoblog import salvar_noticia
+from backend.database.crud.noticias import salvar_noticia
 from backend.database.models import Noticias
 from backend.bot.telegram import enviar_noticias
 

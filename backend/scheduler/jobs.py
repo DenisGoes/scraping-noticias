@@ -1,4 +1,4 @@
-from backend.services.clean_db import clean_dados
+from backend.services.limpeza_noticias import clean_dados
 from apscheduler.schedulers.background import BlockingScheduler
 import pytz
 

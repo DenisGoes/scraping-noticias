@@ -1,4 +1,5 @@
 import os
+from datetime import UTC, datetime
 from dotenv import load_dotenv
 from google import genai
 from google.genai import types
@@ -9,57 +10,60 @@ from backend.database.models import Noticias
 
 load_dotenv()
 
-api_key = os.getenv("GEMINI_API_KEY")
+def buscar_noticias_para_roteiro():
+    """Retorna notícias ainda não usadas em roteiro, mantendo a sessão aberta só na consulta."""
+    with Session() as session:
+        return session.scalars(
+            select(Noticias)
+            .where(
+                Noticias.roteiro_gerado_em.is_(None),
+                Noticias.status.in_(("NOVA", "ENVIADA")),
+            )
+            .order_by(Noticias.coletado_em, Noticias.id)
+        ).all()
 
-if not api_key:
-    raise ValueError("GEMINI_API_KEY não encontrada.")
 
-client = genai.Client(api_key=api_key)
-
-# print("Modelos disponíveis:")
-
-# for model in client.models.list():
-#     print(model.name)
-
-def buscar_todas_noticias():
-
-     with Session() as session:
+def marcar_noticias_como_roteirizadas(ids):
+    if not ids:
+        return
+    with Session() as session:
         try:
-            noticias = session.scalars(select(Noticias)).all()
+            noticias = session.scalars(
+                select(Noticias).where(Noticias.id.in_(ids))
+            ).all()
+            agora = datetime.now(UTC)
+            for noticia in noticias:
+                noticia.roteiro_gerado_em = agora
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
 
-            return noticias
 
-        except Exception as e:
-            print(f"Erro ao buscar notícias: {e}")
-            return []
-
-def gerar_roteiro():
-    noticias = buscar_todas_noticias()
-
+def gerar_roteiro(noticias=None):
+    noticias = noticias if noticias is not None else buscar_noticias_para_roteiro()
     if not noticias:
-        print("Nenhuma notícia encontrada.")
-        exit()
+        print("Nenhuma notícia pendente para gerar roteiro.")
+        return None
+
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY não configurada.")
+
+    client = genai.Client(api_key=api_key)
 
     print(f"{len(noticias)} notícia(s) encontrada(s).")
 
     dados_noticias = ""
 
     for noticia in noticias:
-        dados_noticias += f"""
-            Título: {noticia.titulo}
-
-            Fonte: {noticia.fonte}
-
-            Data de publicação: {noticia.data_publicacao}
-
-            Resumo:
-            {noticia.resumo}
-
-            Link:
-            {noticia.link}
-
-            --------------------------------------------------
-        """
+        dados_noticias += f"""Título: {noticia.titulo}
+Fonte: {noticia.fonte}
+Data de publicação: {noticia.data_publicacao or "não informada"}
+Resumo: {noticia.resumo or "não informado"}
+Link: {noticia.link}
+---
+"""
 
 
     prompt = f"""
@@ -168,7 +172,7 @@ def gerar_roteiro():
     print("Enviando notícias para o Gemini...")
 
     response = client.models.generate_content(
-        model="gemini-3.5-flash",
+        model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
         contents=[prompt],
         config=types.GenerateContentConfig(
             temperature=0.3,

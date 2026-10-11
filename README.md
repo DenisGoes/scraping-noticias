@@ -1,199 +1,152 @@
 # NT Scraper
 
-<!--Badges -->
+O **NT Scraper** coleta notícias de tecnologia de diferentes fontes, organiza os registros em um banco PostgreSQL e publica as novidades em um canal do Telegram. Uma etapa com IA também transforma as notícias pendentes em um roteiro diário, que pode ser aberto no NotebookLM para gerar um áudio.
 
-> NT Scraper é um sistema de busca e coleta automatizada de notícias de tecnologia, de diferentes fontes, como **hacker news**, **Tecnoblog** e outras fontes. <br> Desenvolvido para pessoas que gostam de tecnologia, leitura e que desejam se manter atualizadas sobre as principais notícias do setor.
+O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também serve como estudo de Python, web scraping, APIs, automação, bancos de dados e inteligência artificial.
 
-## 📌 Sobre
-O **NT Scraper** é um sistema desenvolvido para buscar, extrair, armazenar e distribuir notícias de tecnologia em um único local: **Telegram**.
+## Como funciona
 
-Tem por objetivo, diminuir o tempo gasto de pesquisa por notícias, automatizando todo o processo e reunindo as notícias em um canal do Telegram, permitindo a leitura em qualquer lugar que o entusiasta esteja.
+1. O GitHub Actions executa os scrapers do **Tecnoblog**, **BleepingComputer** e **The Hacker News** diariamente às 06:00 no horário de Brasília (09:00 UTC).
+2. Playwright coleta título, fonte, data, resumo e link. A URL única evita duplicar notícias que ainda estejam no banco.
+3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com ações para marcar como **LIDA** ou **REJEITADA**.
+4. O Gemini reúne as notícias pendentes em um resumo e em uma conversa entre dois apresentadores. O roteiro também é publicado no Telegram, com um botão que abre o NotebookLM.
+5. Após três dias, a limpeza remove notícias revisadas (lidas ou rejeitadas) cujo prazo venceu. Notícias pendentes e enviadas não são apagadas pela limpeza.
 
-O projeto foi criado inicialmente para solucionar uma necessidade pessoal e também como um projeto de estudo e hobby, com foco em **Python, web scraping, automação, APIs, bancos de dados e desenvolvimento backend**.
+O roteiro usa apenas notícias ainda não incluídas em um episódio. Elas só são marcadas como utilizadas depois que o Telegram confirma o envio; se houver falha, poderão ser tentadas novamente.
 
+## Tecnologias
 
-<!-- ## 🏗 Arquitetura
+- Python, FastAPI e SQLAlchemy
+- Playwright para coleta das páginas
+- PostgreSQL, com suporte ao Supabase
+- Telegram Bot API
+- Google Gemini API para gerar o roteiro
+- GitHub Actions para agendar a rotina
+- Docker para executar a API e o PostgreSQL
 
---- -->
+## Configuração local
 
-## ✨ Funcionalidades
-- Acessar diferentes fontes de notícias de tecnologia
-- Extrair automaticamente as informações das notícias
-- Armazenar as notícias no banco de dados
-- Gerenciamento das notícias
-- Enviar notícias formatadas para o Telegram
-- Executar o scraper todos os dias, às 06:00
-- Disponibilizar um WebHook para integração com o Telegram
+### 1. Criar e ativar o ambiente Python
 
-
-## 🛠 Tecnologias
-- Python - linguagem principal do projeto
-- FastAPI - desenvolvimento da API e do WebHook
-- Playwright - automação do navegador e web scraping
-- PostgreSQL - armazenamento das notícias
-- SQLAlchemy - ORM para comunicação com o banco de dados
-- Telegram Bot API - envio de notícias e interação com o Telegram
-- GitHub Actions - automação da execução do scraper e integração contínua
-- Docker - conteinerização da aplicação
-- Render - hospedagem do WebHook
-- Supabase - hospedagem do banco de dados PostgreSQL
-
-
-<!-- ## Versões -->
-
-
-
-## 📂 Estrutura do Projeto
-
-```markdown
-Projeto
-├── backend
-│   ├── api
-│   │   └── routes
-│   ├── bot
-│   │   └── telegram.py
-│   ├── database
-│   │   ├── crud
-│   │   ├── models.py
-│   │   └── session.py
-│   ├── main.py
-│   │   └── main.cpython-314.pyc
-│   ├── scheduler
-│   │   ├── jobs.py
-│  
-│   ├── scrapers
-│   │   ├── investimentos
-│   │   └── tecnologia
-│   ├── scripts
-│   │   ├── run_cleanup.py
-│   │   ├── run_create_database.py
-│   │   ├── run_tecnoblog.py
-│   │   └── set_webhook.py
-│   └── services
-│       ├── clean_db.py
-│ 
-├── docker-compose.yml
-├── Dockerfile
-├── docs
-├── estrutura_projeto.txt
-├── LICENSE
-├── README.md
-├── requirements.txt
-└── venv
-```
->Observação: a pasta **venv** não deve ser versionada no Git. Ela deve ser adicionada no **.gitignore**.
-
-
-## ⚙ Deploy
-
-- GitHub - Workflow cron, executando o scraper todos os dias às 06:00
-- Render - hospedagem da API responsável pelo WebHook
-- Supabase - Hospedagem banco de dados postgreSQL
-
-## 🚀 Como usar
-
-### 1. Configurar o Telegram
-
-1. Baixe o Telegram em seu smartphone ou utilize a versão Web/Desktop.
-2. Crie uma conta ou faça login.
-3. Pesquise por **@BotFather** e inicie uma conversa.
-4. Execute o comando `/newbot`.
-5. Escolha um nome e um **username** para o bot.
-6. Ao final, o BotFather fornecerá um **Token de Acesso**. Guarde esse token.
-7. Crie um canal no Telegram.
-8. Adicione o bot criado como **Administrador** do canal, concedendo permissão para enviar mensagens.
-9. Obtenha o **ID do canal** (utilizado pelo sistema para enviar as notícias).
-
-### 1.1 Obter o id do Canal
-1. Envie uma mensagem no canal
-2. Abra o navegador e acesse: https://api.telegram.org/bot<SEU_TOKEN>/getUpdates
-3. Na resposta JSON, procure pelo campo chat id.
-
-### 2. Configurar as variáveis de ambiente
-
-Crie um arquivo `.env` na raiz do projeto.
-Utilize o arquivo .env.example como referência para configurar as variáveis necessárias.
-
-### 3. Configurar o sistema
-
-Clone o projeto
-```markdown
-git clone https://github.com/DenisGoes/scraping-noticias.git
-```
-Crie o ambiente virtual
-```markdown
+```bash
 python -m venv venv
 ```
 
-Ative o ambiente virtual<br>
+No Windows:
 
-Windowns
-```markdown
-venv\Scripts\activate
+```powershell
+venv\Scripts\Activate.ps1
 ```
 
-Linux
-```markdown
+No Linux ou macOS:
+
+```bash
 source venv/bin/activate
 ```
 
-Instale todas as dependecias
-``` markdown
+Instale os pacotes e o Chromium usado pelo Playwright:
+
+```bash
 pip install -r requirements.txt
+playwright install chromium
 ```
-Crie o banco de dados:
+
+### 2. Configurar credenciais
+
+Copie `.env.example` para `.env` e substitua os valores de exemplo:
+
+```env
+API_TOKEN=token_do_bot_telegram
+DATABASE_URL=postgresql+psycopg://usuario:senha@localhost:5432/nt_scraper
+GEMINI_API_KEY=sua_chave_google_ai
+ID_CANAL=-1001234567890
+```
+
+No Windows, use `Copy-Item .env.example .env`; no Linux ou macOS, use `cp .env.example .env`. `DATABASE_URL`, `API_TOKEN`, `ID_CANAL` e `GEMINI_API_KEY` são necessários para os respectivos recursos. `GEMINI_MODEL` é opcional e usa `gemini-3.5-flash` como padrão. `NOTEBOOKLM_URL` é opcional; configure-a no `.env` com o endereço do notebook que deve abrir pelo botão do Telegram.
+
+Para obter o bot e o token, converse com [@BotFather](https://t.me/BotFather), crie um bot e adicione-o como administrador do canal, com permissão para publicar mensagens. Use o ID do canal em `ID_CANAL`.
+
+### 3. Preparar o banco
+
+Configure o PostgreSQL localmente ou use o serviço do Supabase. Para criar as tabelas e atualizar um banco já existente:
 
 ```bash
 python -m backend.scripts.run_create_database
 ```
 
-Inicie a API:
+Esse comando cria as tabelas ausentes e adiciona, de forma idempotente, a coluna `roteiro_gerado_em` usada para evitar repetir notícias em roteiros futuros.
+
+### 4. Executar a aplicação
+
+Inicie a API e o endpoint do webhook:
 
 ```bash
 uvicorn backend.main:app --reload
 ```
 
-### 4. Executar os scrapers
+O endpoint de saúde está em `/`. O webhook recebe atualizações em `POST /telegram/webhook`. Configure o endereço público do webhook com:
+
+```bash
+python -m backend.scripts.set_webhook
+```
+
+Execute a coleta, o envio das notícias ou o roteiro manualmente:
 
 ```bash
 python -m backend.scripts.run_scraper
+python -m backend.scripts.run_roteiro
+python -m backend.scripts.run_cleanup
 ```
 
-Após a execução, as notícias encontradas serão:
+## Execução automática no GitHub
 
-* armazenadas no banco de dados;
-* enviadas automaticamente para o canal do Telegram configurado.
+O workflow `scraper_nt.yml` prepara o banco, coleta e publica notícias, gera o roteiro e executa a limpeza. Ele roda diariamente às 09:00 UTC (06:00 em Brasília) e também pode ser iniciado manualmente.
 
-## 📖 Documentação
+Cadastre nos **Secrets** do repositório:
 
-A documentação completa está em: 
-```markdown
-docs/
+- `DATABASE_URL`
+- `API_TOKEN`
+- `ID_CANAL`
+- `GEMINI_API_KEY`
+
+`NOTEBOOKLM_URL` e `GEMINI_MODEL` podem ser configuradas como variáveis de repositório ou adicionadas ao workflow se precisar substituir os padrões.
+
+Há também um workflow separado para a limpeza diária às 05:00 no horário de Brasília. Ele pode ser usado independentemente do fluxo principal.
+
+## Estrutura principal
+
+```text
+.
+├── backend/
+│   ├── api/routes/       # Webhook do Telegram
+│   ├── bot/              # Envio de mensagens e ações do canal
+│   ├── database/
+│   │   ├── crud/         # Persistência e consultas das notícias
+│   │   ├── models.py     # Modelo da notícia
+│   │   └── session.py    # Conexão com PostgreSQL
+│   ├── scrapers/tecnologia/
+│   │   ├── bleepingcomputer/
+│   │   ├── tecnoblog/
+│   │   └── the_hacker_news/
+│   ├── services/
+│   │   ├── gerador_roteiro.py
+│   │   └── limpeza_noticias.py
+│   ├── scripts/          # Comandos para coleta, roteiro e manutenção
+│   └── scheduler/        # Tarefas agendadas pelo backend
+├── .github/workflows/    # Rotinas agendadas
+└── .env.example          # Modelo das variáveis locais
 ```
-*A documentação se encontra em desenvolvimento!*
 
-<!-- ## 🤝 Contribuindo -->
+## Observações
 
-## 👨‍💻 Autor
+- O scraping depende da estrutura das páginas das fontes e pode precisar de ajustes quando elas mudarem.
+- Use a ferramenta respeitando os termos de uso e as políticas dos sites consultados.
+- Não versione `.env`, tokens, chaves de API ou a pasta `venv`.
 
-**Denis Goes**
+## Licença
 
-GitHub: https://github.com/DenisGoes
+Este projeto está licenciado sob a licença MIT. Consulte [LICENSE](LICENSE).
 
-<!-- Portfólio:  -->
+## Autor
 
-## 📄 Licença
-*Este projeto está licenciado sob a licença MIT.* 
-
-## Aviso
-*Este projeto foi desenvolvido para fins educacionais e de estudo sobre automação e web scraping. O uso da ferramenta deve respeitar os termos de uso e as políticas das plataformas acessadas. O autor não se responsabiliza pelo uso inadequado do software.*
-
-## Agradecimentos
-
-Obrigado por utilizar o NT Scraper!
-
-Este projeto foi desenvolvido com o objetivo de facilitar a busca por notícias de tecnologia e, servir como um projeto de estudo.
-
-Todo feedback é muito bem-vindo.
-
-Se este projeto foi útil para você, considere deixar uma ⭐ no repositório para apoiar seu desenvolvimento.
+**Denis Goes** — [GitHub](https://github.com/DenisGoes)

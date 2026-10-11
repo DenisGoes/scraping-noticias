@@ -87,8 +87,9 @@ def dividir_texto(texto, limite=4000):
     return partes
 
 
-URL_NOTEBOOKLM = (
-    "https://notebook.google.com/notebook/932f141b-faa3-42b7-94d7-1d39bf59c8ac"
+URL_NOTEBOOKLM = os.getenv(
+    "NOTEBOOKLM_URL",
+    "https://notebooklm.google.com/notebook/932f141b-faa3-42b7-94d7-1d39bf59c8ac",
 )
 
 
@@ -100,13 +101,13 @@ def enviar_roteiro(roteiro):
 
             if i == 0:
                 markup = quick_markup(
-                    {"🎙️ Gerar Áudio": {"url": URL_NOTEBOOKLM}}, row_width=1
+                    {"📒 Abrir no NotebookLM": {"url": URL_NOTEBOOKLM}}, row_width=1
                 )
 
-                mensagem = "🎙️ <b>ROTEIRO DO DIA</b>\n\n" f"{parte}"
+                mensagem = "🎙️ ROTEIRO DO DIA\n\n" f"{parte}"
 
                 bot.send_message(
-                    ID_CANAL, mensagem, reply_markup=markup, parse_mode="HTML"
+                    ID_CANAL, mensagem, reply_markup=markup
                 )
 
             else:
@@ -163,6 +164,7 @@ def enviar_noticias():
 
                 if sucesso:
                     noticia.status = "ENVIADA"
+                    noticia.enviado_telegram = True
                     session.commit()
 
                     print(f"✅ Notícia {noticia.id} marcada como ENVIADA")
