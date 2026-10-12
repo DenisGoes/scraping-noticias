@@ -20,6 +20,7 @@ load_dotenv()
 
 API_TOKEN = os.getenv("API_TOKEN")
 ID_CANAL = os.getenv("ID_CANAL")
+INTERVALO_ENVIO_NOTICIAS = 5
 
 bot = telebot.TeleBot(API_TOKEN, threaded=False)
 _relatorio_lock = Lock()
@@ -324,7 +325,7 @@ def enviar_noticias():
                 print("Nenhuma notícia nova encontrada.")
                 return
 
-            for noticia in noticias:
+            for indice, noticia in enumerate(noticias):
                 sucesso = enviar_mensagem(noticia)
 
                 if sucesso:
@@ -337,7 +338,8 @@ def enviar_noticias():
                 else:
                     session.rollback()
 
-                time.sleep(2)
+                if indice < len(noticias) - 1:
+                    time.sleep(INTERVALO_ENVIO_NOTICIAS)
 
         except Exception as e:
             session.rollback()
