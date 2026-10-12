@@ -7,6 +7,10 @@ on:
 
   workflow_dispatch:
 
+concurrency:
+  group: scraper-noticias
+  cancel-in-progress: false
+
 jobs:
   schedule_gate:
     name: Verificar intervalo de 48 horas
