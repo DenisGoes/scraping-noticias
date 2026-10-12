@@ -93,6 +93,10 @@ python -m backend.scripts.set_webhook
 Execute a coleta, o envio das notícias ou o roteiro manualmente:
 
 ```bash
+python -m backend.scripts.run_tecnoblog
+python -m backend.scripts.run_bleepingcomputer
+python -m backend.scripts.run_hacker_news
+# Atalho para executar as três fontes em sequência:
 python -m backend.scripts.run_scraper
 python -m backend.scripts.run_roteiro
 python -m backend.scripts.run_cleanup
@@ -123,13 +127,13 @@ No Render, cadastre a chave como `GEMINI_API_KEY` (Environment, não como `GOOGL
 │   │   ├── models.py     # Modelo da notícia
 │   │   └── session.py    # Conexão com PostgreSQL
 │   ├── scrapers/tecnologia/
-│   │   ├── bleepingcomputer/
-│   │   ├── tecnoblog/
-│   │   └── the_hacker_news/
+│   │   ├── bleepingcomputer_scraper.py
+│   │   ├── tecnoblog_scraper.py
+│   │   └── hacker_news_scraper.py
 │   ├── services/
 │   │   ├── gerador_roteiro.py
 │   │   └── limpeza_noticias.py
-│   ├── scripts/          # Comandos para coleta, roteiro e manutenção
+│   ├── scripts/          # Um comando de execução para cada fonte, além de roteiro e manutenção
 │   └── scheduler/        # Tarefas agendadas pelo backend
 ├── .github/workflows/    # Rotinas agendadas
 └── .env.example          # Modelo das variáveis locais

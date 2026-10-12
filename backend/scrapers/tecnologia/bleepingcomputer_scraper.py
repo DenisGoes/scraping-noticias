@@ -1,32 +1,35 @@
 from playwright.sync_api import sync_playwright
 from backend.database.crud.noticias import salvar_noticia
-from backend.database.models import Noticias
 from backend.bot.telegram import enviar_noticias
 
-def run_scraper_tec():
+def run_scraper_bleeping():
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
-        page.goto("https://tecnoblog.net/")  # Ir para página da tecnoblog
-        # page.wait_for_timeout(5000) #Esperar 5 segundos
+        page.goto("https://www.bleepingcomputer.com/", wait_until="domcontentloaded")
 
-        cards = page.locator(".article-destaque")
+        cards = page.locator("#bc-home-news-main-wrap > li")
+
+        print(f"Cards encontrados: {cards.count()}")
 
         for i in range(cards.count()):
             try:
                 card = cards.nth(i)
 
-                titulo = card.locator(".texts h2").inner_text()
-                print(titulo)
+                titulo = card.locator(".bc_latest_news_text h4").inner_text()
+                # print(titulo)
 
-                fonte = "Tecnoblog"
+                fonte = "bleepingcomputer"
 
-                data_publicacao = card.locator(".info time").inner_text()
-                print(data_publicacao)
+                data_publicacao = card.locator(".bc_news_date").inner_text()
+                # print(data_publicacao)
 
-                link = card.locator("a").get_attribute("href")
-                print(link)
+                resumo = card.locator(".bc_latest_news_text p").inner_text()
+                # print(resumo)
+
+                link = card.locator(".bc_latest_news_text h4 a").get_attribute("href")
+                # print(link)
 
                 mensagem = (
                     "🔥 <b>Nova notícia encontrada!</b>\n\n"
@@ -35,23 +38,23 @@ def run_scraper_tec():
                     f"📍 {data_publicacao}\n"
                     f"📅 {link}\n"
                 )
-
+                
                 print(f"""
                     Titulo: {titulo}
                     Fonte: {fonte}
                     Data publicação: {data_publicacao}
+                    Resumo: {resumo}
                     Link: {link}
                 """)
-
+                
                 salvar_noticia(
                     titulo=titulo, 
                     fonte=fonte, 
                     data_publicacao=data_publicacao, 
-                    resumo=None,
+                    resumo=resumo,
                     link=link,
                     mensagem=mensagem
                 )
-
             except Exception as e:
                 print(f"Algo inesperado aconteceu! {e}")
 

@@ -5,7 +5,7 @@ from backend.bot.telegram import enviar_noticias
 
 def run_scraper_the_hacker_news():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
+        browser = p.chromium.launch(headless=False)
         page = browser.new_page()
 
         page.goto("https://thehackernews.com/", wait_until="domcontentloaded")

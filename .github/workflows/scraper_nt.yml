@@ -36,10 +36,23 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: python -m backend.scripts.run_create_database
 
-      - name: Executar scraper
+      - name: Executar scraper do Tecnoblog
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           API_TOKEN: ${{ secrets.API_TOKEN }}
           ID_CANAL: ${{ secrets.ID_CANAL }}
-        run: |
-          python -m backend.scripts.run_scraper
+        run: python -m backend.scripts.run_tecnoblog
+
+      - name: Executar scraper do BleepingComputer
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ID_CANAL: ${{ secrets.ID_CANAL }}
+        run: python -m backend.scripts.run_bleepingcomputer
+
+      - name: Executar scraper do The Hacker News
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ID_CANAL: ${{ secrets.ID_CANAL }}
+        run: python -m backend.scripts.run_hacker_news
