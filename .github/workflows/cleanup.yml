@@ -23,6 +23,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
+      - name: Criar tabelas e aplicar migrações do banco
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: python -m backend.scripts.run_create_database
+
       - name: Executar Limpeza
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

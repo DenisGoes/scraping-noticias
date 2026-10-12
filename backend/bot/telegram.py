@@ -35,6 +35,21 @@ def telegram_message_not_found(error):
     return "message to delete not found" in message or "message not found" in message
 
 
+def _responder_ao_clique(call, texto, callback_respondido=False, show_alert=False):
+    """Confirma rapidamente o callback ou publica o resultado como resposta."""
+    if not callback_respondido:
+        return bot.answer_callback_query(
+            call.id, texto, show_alert=show_alert
+        )
+
+    if call.message:
+        return bot.send_message(
+            ID_CANAL,
+            texto,
+            reply_to_message_id=call.message.message_id,
+        )
+
+
 def _gerar_relatorio_em_background(noticia_id):
     try:
         with Session() as session:
@@ -72,21 +87,39 @@ def _gerar_relatorio_em_background(noticia_id):
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
+    callback_respondido = False
     try:
-        _processar_callback(call)
+        dados = call.data or ""
+        if dados.startswith("LIDA:"):
+            confirmacao = "Registrando como lida…"
+        elif dados.startswith("REJEITADA:"):
+            confirmacao = "Removendo notícia…"
+        elif dados.startswith(("GERAR_ROTEIRO", "GERAR_RELATORIO")):
+            confirmacao = "Preparando o roteiro…"
+        else:
+            confirmacao = "Processando clique…"
+        bot.answer_callback_query(call.id, confirmacao)
+        callback_respondido = True
+    except Exception as e:
+        # Continua o processamento mesmo se a confirmação imediata falhar.
+        print(f"Erro ao confirmar callback imediatamente: {e}")
+
+    try:
+        _processar_callback(call, callback_respondido)
     except Exception as e:
         print(f"❌ Falha ao processar callback {call.data!r}: {e}")
         try:
-            bot.answer_callback_query(
-                call.id,
+            _responder_ao_clique(
+                call,
                 "Não foi possível processar o botão. Tente novamente.",
+                callback_respondido,
                 show_alert=True,
             )
         except Exception as answer_error:
             print(f"Erro ao responder callback do Telegram: {answer_error}")
 
 
-def _processar_callback(call):
+def _processar_callback(call, callback_respondido=False):
     callback_data = call.data or ""
     print(f"Callback do Telegram recebido: {callback_data}")
 
@@ -94,8 +127,11 @@ def _processar_callback(call):
         try:
             noticia_id = int(callback_data.split(":", 1)[1])
         except ValueError:
-            bot.answer_callback_query(
-                call.id, "Botão de roteiro inválido.", show_alert=True
+            _responder_ao_clique(
+                call,
+                "Botão de roteiro inválido.",
+                callback_respondido,
+                show_alert=True,
             )
             return
     elif callback_data in ("GERAR_ROTEIRO", "GERAR_RELATORIO"):
@@ -108,8 +144,11 @@ def _processar_callback(call):
             ) if call.message else None
             noticia_id = noticia.id if noticia else None
         if noticia_id is None:
-            bot.answer_callback_query(
-                call.id, "Não encontrei a notícia desta mensagem.", show_alert=True
+            _responder_ao_clique(
+                call,
+                "Não encontrei a notícia desta mensagem.",
+                callback_respondido,
+                show_alert=True,
             )
             return
     else:
@@ -119,18 +158,28 @@ def _processar_callback(call):
         with Session() as session:
             noticia = session.get(Noticias, noticia_id)
             if noticia is None:
-                bot.answer_callback_query(
-                    call.id, "Notícia não encontrada.", show_alert=True
+                _responder_ao_clique(
+                    call,
+                    "Notícia não encontrada.",
+                    callback_respondido,
+                    show_alert=True,
                 )
                 return
             if noticia.roteiro_gerado_em is not None:
-                bot.answer_callback_query(
-                    call.id, "O roteiro desta notícia já foi gerado.", show_alert=True
+                _responder_ao_clique(
+                    call,
+                    "O roteiro desta notícia já foi gerado.",
+                    callback_respondido,
+                    show_alert=True,
                 )
                 return
 
         if not _relatorio_lock.acquire(blocking=False):
-            bot.answer_callback_query(call.id, "Um relatório já está sendo gerado.")
+            _responder_ao_clique(
+                call,
+                "Um relatório já está sendo gerado.",
+                callback_respondido,
+            )
             return
 
         worker = Thread(
@@ -143,12 +192,6 @@ def _processar_callback(call):
         except Exception:
             _relatorio_lock.release()
             raise
-        try:
-            bot.answer_callback_query(
-                call.id, "Enviando esta notícia para gerar o roteiro…"
-            )
-        except Exception as e:
-            print(f"Erro ao confirmar clique de gerar roteiro: {e}")
         return
 
     with Session() as session:
@@ -162,12 +205,18 @@ def _processar_callback(call):
             )
 
             if not noticia:
-                bot.answer_callback_query(call.id, "Notícia não encontrada!")
+                _responder_ao_clique(
+                    call, "Notícia não encontrada!", callback_respondido
+                )
                 return
 
             if acao == "LIDA":
                 if (noticia.status or "").casefold() == "lida":
-                    bot.answer_callback_query(call.id, "Essa notícia já foi lida")
+                    _responder_ao_clique(
+                        call,
+                        "Essa notícia já foi lida.",
+                        callback_respondido,
+                    )
                     return
                 noticia.status = "lida"
                 noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
@@ -180,34 +229,37 @@ def _processar_callback(call):
                     except Exception as e:
                         print(f"Erro ao deletar mensagem do Telegram: {e}")
                         if not telegram_message_not_found(e):
-                            bot.answer_callback_query(
-                                call.id,
+                            _responder_ao_clique(
+                                call,
                                 "Não consegui apagar a publicação; notícia mantida para nova tentativa.",
+                                callback_respondido,
                                 show_alert=True,
                             )
                             return
                 session.delete(noticia)
                 session.commit()
-                bot.answer_callback_query(
-                    call.id, "Notícia removida do Telegram e do banco."
-                )
                 return
 
             else:
-                bot.answer_callback_query(call.id, "Ação inválida!")
+                _responder_ao_clique(
+                    call, "Ação inválida!", callback_respondido
+                )
                 return
 
             session.commit()
 
-            bot.answer_callback_query(call.id, "Notícia marcada como lida.")
+            _responder_ao_clique(
+                call, "Notícia marcada como lida.", callback_respondido
+            )
 
         except Exception as e:
             session.rollback()
             print(f"❌ Erro no callback: {e}")
             try:
-                bot.answer_callback_query(
-                    call.id,
+                _responder_ao_clique(
+                    call,
                     "Não foi possível processar o botão. Tente novamente.",
+                    callback_respondido,
                     show_alert=True,
                 )
             except Exception as answer_error:

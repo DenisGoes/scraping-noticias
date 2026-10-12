@@ -43,11 +43,3 @@ jobs:
           ID_CANAL: ${{ secrets.ID_CANAL }}
         run: |
           python -m backend.scripts.run_scraper
-
-      - name: Executar cleanup
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          API_TOKEN: ${{ secrets.API_TOKEN }}
-          ID_CANAL: ${{ secrets.ID_CANAL }}
-        run: |
-          python -m backend.scripts.run_cleanup

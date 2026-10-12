@@ -12,7 +12,7 @@ O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também
 4. **Já li** altera o status para `lida` e define a remoção para três dias depois; se clicar novamente, o bot avisa que a notícia já foi lida. **Rejeitar** apaga a publicação e remove o registro. Se a publicação já não existir no Telegram, o registro também é removido; em outros erros, ele fica salvo para nova tentativa.
 5. **Gerar roteiro** envia somente a notícia daquele botão ao Gemini, que cria um roteiro de podcast. Ao final do roteiro, o bot publica o botão do NotebookLM para você copiar o roteiro e gerar o podcast manualmente.
 
-O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar roteiro** na notícia desejada. Cada acionamento gera o roteiro usando apenas aquela notícia, que continua salva no banco. Depois de copiar o roteiro e abrir o NotebookLM pelo botão enviado ao final, você inicia a geração do podcast. Se já houver roteiro, o bot informa que ele já foi gerado. Notícias com `remover_em` vencido são apagadas do Telegram e do banco pela limpeza diária; registros sem prazo continuam salvos. Se o Telegram retornar um erro diferente de publicação ausente durante a limpeza, o registro fica salvo para nova tentativa.
+O workflow diário faz a coleta sem chamar o Gemini. A geração só começa quando alguém toca em **Gerar roteiro** na notícia desejada. Cada acionamento gera o roteiro usando apenas aquela notícia, que continua salva no banco. Depois de copiar o roteiro e abrir o NotebookLM pelo botão enviado ao final, você inicia a geração do podcast. Se já houver roteiro, o bot informa que ele já foi gerado. Notícias com `remover_em` vencido são apagadas do Telegram e do banco pela limpeza diária; registros sem prazo continuam salvos. Se o Telegram retornar um erro diferente de publicação ausente durante a limpeza, o registro fica salvo para nova tentativa. A limpeza é executada uma vez por dia pelo workflow separado, às 05:00 no horário de Brasília.
 
 ## Tecnologias
 
@@ -100,7 +100,7 @@ python -m backend.scripts.run_cleanup
 
 ## Execução automática no GitHub
 
-O workflow `scraper_nt.yml` prepara o banco, coleta e publica notícias e executa a limpeza. Ele roda diariamente às 09:00 UTC (06:00 em Brasília) e também pode ser iniciado manualmente. A geração do relatório é acionada pelo botão no Telegram.
+O workflow `scraper_nt.yml` prepara o banco, coleta e publica notícias. Ele roda diariamente às 09:00 UTC (06:00 em Brasília) e também pode ser iniciado manualmente. A limpeza é executada uma vez ao dia pelo workflow `cleanup.yml`, às 08:00 UTC (05:00 em Brasília), e pode ser iniciada manualmente. A geração do relatório é acionada pelo botão no Telegram.
 
 Cadastre nos **Secrets** do repositório:
 
@@ -110,8 +110,6 @@ Cadastre nos **Secrets** do repositório:
 - `GEMINI_API_KEY`
 
 `NOTEBOOKLM_URL` e `GEMINI_MODEL` podem ser configuradas como variáveis de repositório ou adicionadas ao workflow se precisar substituir os padrões.
-
-Há também um workflow separado para a limpeza diária às 05:00 no horário de Brasília. Ele pode ser usado independentemente do fluxo principal.
 
 ## Estrutura principal
 
