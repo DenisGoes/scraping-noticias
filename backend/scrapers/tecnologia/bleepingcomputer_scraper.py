@@ -1,62 +1,41 @@
-from playwright.sync_api import sync_playwright
-from backend.database.crud.noticias import salvar_noticia
 from backend.bot.telegram import enviar_noticias
+from backend.database.crud.noticias import salvar_noticia
+from backend.scrapers.rss_reader import ler_feed_rss
+
+
+LIMITE_NOTICIAS = 10
+URL_FEED = "https://www.bleepingcomputer.com/feed/"
+
 
 def run_scraper_bleeping():
-    with sync_playwright() as p:
-        browser = p.chromium.launch(headless=True)
-        page = browser.new_page()
+    noticias = ler_feed_rss(URL_FEED)[:LIMITE_NOTICIAS]
+    print(
+        f"Notícias encontradas no BleepingComputer: {len(noticias)} "
+        f"(limite: {LIMITE_NOTICIAS})"
+    )
 
-        page.goto("https://www.bleepingcomputer.com/", wait_until="domcontentloaded")
+    for noticia in noticias:
+        titulo = noticia["titulo"]
+        fonte = "bleepingcomputer"
+        data_publicacao = noticia["data_publicacao"]
+        resumo = noticia["resumo"]
+        link = noticia["link"]
+        mensagem = (
+            "🔥 <b>Nova notícia encontrada!</b>\n\n"
+            f"📌 <b>{titulo}</b>\n"
+            f"🏢 {fonte}\n"
+            f"📍 {data_publicacao or 'Data não informada'}\n"
+            f"🔗 {link}\n"
+        )
 
-        cards = page.locator("#bc-home-news-main-wrap > li")
+        print(f"Título: {titulo} | Publicação: {data_publicacao} | Link: {link}")
+        salvar_noticia(
+            titulo=titulo,
+            fonte=fonte,
+            data_publicacao=data_publicacao,
+            resumo=resumo,
+            link=link,
+            mensagem=mensagem,
+        )
 
-        print(f"Cards encontrados: {cards.count()}")
-
-        for i in range(cards.count()):
-            try:
-                card = cards.nth(i)
-
-                titulo = card.locator(".bc_latest_news_text h4").inner_text()
-                # print(titulo)
-
-                fonte = "bleepingcomputer"
-
-                data_publicacao = card.locator(".bc_news_date").inner_text()
-                # print(data_publicacao)
-
-                resumo = card.locator(".bc_latest_news_text p").inner_text()
-                # print(resumo)
-
-                link = card.locator(".bc_latest_news_text h4 a").get_attribute("href")
-                # print(link)
-
-                mensagem = (
-                    "🔥 <b>Nova notícia encontrada!</b>\n\n"
-                    f"📌 <b>{titulo}</b>\n"
-                    f"🏢 {fonte}\n"
-                    f"📍 {data_publicacao}\n"
-                    f"📅 {link}\n"
-                )
-                
-                print(f"""
-                    Titulo: {titulo}
-                    Fonte: {fonte}
-                    Data publicação: {data_publicacao}
-                    Resumo: {resumo}
-                    Link: {link}
-                """)
-                
-                salvar_noticia(
-                    titulo=titulo, 
-                    fonte=fonte, 
-                    data_publicacao=data_publicacao, 
-                    resumo=resumo,
-                    link=link,
-                    mensagem=mensagem
-                )
-            except Exception as e:
-                print(f"Algo inesperado aconteceu! {e}")
-
-        browser.close()
     enviar_noticias()

@@ -27,10 +27,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
 
-      - name: Instalar Chromium do Playwright
-        run: |
-          playwright install chromium --with-deps
-
       - name: Criar tabelas e aplicar migrações do banco
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}

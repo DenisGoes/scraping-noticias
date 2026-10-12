@@ -7,7 +7,7 @@ O projeto é voltado a quem quer acompanhar tecnologia em um só lugar e também
 ## Como funciona
 
 1. O GitHub Actions executa os scrapers do **Tecnoblog**, **BleepingComputer** e **The Hacker News** diariamente às 06:00 no horário de Brasília (09:00 UTC).
-2. Playwright coleta título, fonte, data, resumo e link. A URL única evita duplicar notícias que ainda estejam no banco.
+2. Cada fonte publica um feed RSS, lido por HTTP. O leitor ordena os itens pela data e extrai título, resumo e link. O BleepingComputer e o The Hacker News têm limite de 10 notícias por execução; o Tecnoblog tem limite de 20 e filtra notícias sobre videogames, consoles e jogos. A URL única evita duplicar registros no banco.
 3. As notícias novas são armazenadas no PostgreSQL e enviadas ao canal do Telegram com os botões **Já li**, **Rejeitar** e **Gerar roteiro**.
 4. **Já li** altera o status para `lida` e define a remoção para três dias depois; se clicar novamente, o bot avisa que a notícia já foi lida. **Rejeitar** apaga a publicação e remove o registro. Se a publicação já não existir no Telegram, o registro também é removido; em outros erros, ele fica salvo para nova tentativa.
 5. **Gerar roteiro** envia somente a notícia daquele botão ao Gemini, que cria um roteiro de podcast. Ao final do roteiro, o bot publica o botão do NotebookLM para você copiar o roteiro e gerar o podcast manualmente.
@@ -17,7 +17,7 @@ O workflow diário faz a coleta sem chamar o Gemini. A geração só começa qua
 ## Tecnologias
 
 - Python, FastAPI e SQLAlchemy
-- Playwright para coleta das páginas
+- Requests e RSS/Atom para coleta das fontes
 - PostgreSQL, com suporte ao Supabase
 - Telegram Bot API
 - Google Gemini API para gerar o roteiro
@@ -44,11 +44,10 @@ No Linux ou macOS:
 source venv/bin/activate
 ```
 
-Instale os pacotes e o Chromium usado pelo Playwright:
+Instale os pacotes do projeto:
 
 ```bash
 pip install -r requirements.txt
-playwright install chromium
 ```
 
 ### 2. Configurar credenciais
