@@ -21,7 +21,7 @@ load_dotenv()
 API_TOKEN = os.getenv("API_TOKEN")
 ID_CANAL = os.getenv("ID_CANAL")
 
-bot = telebot.TeleBot(API_TOKEN)
+bot = telebot.TeleBot(API_TOKEN, threaded=False)
 _relatorio_lock = Lock()
 
 
@@ -36,18 +36,10 @@ def telegram_message_not_found(error):
 
 
 def _responder_ao_clique(call, texto, callback_respondido=False, show_alert=False):
-    """Confirma rapidamente o callback ou publica o resultado como resposta."""
-    if not callback_respondido:
-        return bot.answer_callback_query(
-            call.id, texto, show_alert=show_alert
-        )
-
-    if call.message:
-        return bot.send_message(
-            ID_CANAL,
-            texto,
-            reply_to_message_id=call.message.message_id,
-        )
+    """Mostra o resultado do botão como aviso flutuante no Telegram."""
+    return bot.answer_callback_query(
+        call.id, texto, show_alert=show_alert
+    )
 
 
 def _gerar_relatorio_em_background(noticia_id):
@@ -55,10 +47,10 @@ def _gerar_relatorio_em_background(noticia_id):
         with Session() as session:
             noticia = session.get(Noticias, noticia_id)
             if noticia is None:
-                bot.send_message(ID_CANAL, "Notícia não encontrada no banco de dados.")
+                print(f"Notícia {noticia_id} não encontrada para gerar roteiro.")
                 return
             if noticia.roteiro_gerado_em is not None:
-                bot.send_message(ID_CANAL, "O roteiro desta notícia já foi gerado.")
+                print(f"Roteiro da notícia {noticia_id} já foi gerado.")
                 return
             noticia_id = noticia.id
             noticia_para_gerar = noticia
@@ -68,51 +60,23 @@ def _gerar_relatorio_em_background(noticia_id):
             marcar_noticias_como_roteirizadas([noticia_id])
             print(f"Notícia {noticia_id} marcada como usada no relatório.")
         else:
-            bot.send_message(
-                ID_CANAL,
-                "Não foi possível gerar ou enviar o roteiro. Tente novamente mais tarde.",
-            )
+            print(f"Não foi possível gerar ou enviar o roteiro da notícia {noticia_id}.")
     except Exception as e:
         print(f"Erro ao gerar relatório: {e}")
-        try:
-            bot.send_message(
-                ID_CANAL,
-                "O Gemini não conseguiu gerar o roteiro agora. Tente novamente mais tarde.",
-            )
-        except Exception as send_error:
-            print(f"Erro ao avisar sobre a falha do relatório: {send_error}")
     finally:
         _relatorio_lock.release()
 
 
 @bot.callback_query_handler(func=lambda call: True)
 def callback(call):
-    callback_respondido = False
     try:
-        dados = call.data or ""
-        if dados.startswith("LIDA:"):
-            confirmacao = "Registrando como lida…"
-        elif dados.startswith("REJEITADA:"):
-            confirmacao = "Removendo notícia…"
-        elif dados.startswith(("GERAR_ROTEIRO", "GERAR_RELATORIO")):
-            confirmacao = "Preparando o roteiro…"
-        else:
-            confirmacao = "Processando clique…"
-        bot.answer_callback_query(call.id, confirmacao)
-        callback_respondido = True
-    except Exception as e:
-        # Continua o processamento mesmo se a confirmação imediata falhar.
-        print(f"Erro ao confirmar callback imediatamente: {e}")
-
-    try:
-        _processar_callback(call, callback_respondido)
+        _processar_callback(call)
     except Exception as e:
         print(f"❌ Falha ao processar callback {call.data!r}: {e}")
         try:
             _responder_ao_clique(
                 call,
                 "Não foi possível processar o botão. Tente novamente.",
-                callback_respondido,
                 show_alert=True,
             )
         except Exception as answer_error:
@@ -192,6 +156,7 @@ def _processar_callback(call, callback_respondido=False):
         except Exception:
             _relatorio_lock.release()
             raise
+        _responder_ao_clique(call, "Gerando o roteiro; ele será publicado no canal quando ficar pronto.")
         return
 
     with Session() as session:
@@ -238,6 +203,7 @@ def _processar_callback(call, callback_respondido=False):
                             return
                 session.delete(noticia)
                 session.commit()
+                _responder_ao_clique(call, "Notícia rejeitada e removida.")
                 return
 
             else:

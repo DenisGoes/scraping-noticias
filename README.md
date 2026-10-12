@@ -62,7 +62,7 @@ GEMINI_API_KEY=sua_chave_google_ai
 ID_CANAL=-1001234567890
 ```
 
-No Windows, use `Copy-Item .env.example .env`; no Linux ou macOS, use `cp .env.example .env`. `DATABASE_URL`, `API_TOKEN`, `ID_CANAL` e `GEMINI_API_KEY` são necessários para os respectivos recursos. `GEMINI_MODEL` é opcional e usa `gemini-3.5-flash` como padrão. `NOTEBOOKLM_URL` é opcional; configure-a no `.env` com o endereço do notebook que deve abrir pelo botão do Telegram.
+No Windows, use `Copy-Item .env.example .env`; no Linux ou macOS, use `cp .env.example .env`. `DATABASE_URL`, `API_TOKEN`, `ID_CANAL` e `GEMINI_API_KEY` são necessários para os respectivos recursos. `GEMINI_MODEL` é opcional e usa `gemini-3.8-flash` como padrão; em erros temporários de disponibilidade, o gerador tenta `gemini-3.5-flash-lite` (ajustável por `GEMINI_FALLBACK_MODEL`). `NOTEBOOKLM_URL` é opcional; configure-a no `.env` com o endereço do notebook que deve abrir pelo botão do Telegram.
 
 Para obter o bot e o token, converse com [@BotFather](https://t.me/BotFather), crie um bot e adicione-o como administrador do canal, com permissão para publicar mensagens. Use o ID do canal em `ID_CANAL`.
 
@@ -109,7 +109,7 @@ Cadastre nos **Secrets** do repositório:
 - `ID_CANAL`
 - `GEMINI_API_KEY`
 
-`NOTEBOOKLM_URL` e `GEMINI_MODEL` podem ser configuradas como variáveis de repositório ou adicionadas ao workflow se precisar substituir os padrões.
+No Render, cadastre a chave como `GEMINI_API_KEY` (Environment, não como `GOOGLE_API_KEY`). `GEMINI_MODEL` e `GEMINI_FALLBACK_MODEL` são opcionais; os padrões são `gemini-3.8-flash` e `gemini-3.5-flash-lite`. `NOTEBOOKLM_URL` também é opcional.
 
 ## Estrutura principal
 

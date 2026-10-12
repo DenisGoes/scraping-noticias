@@ -175,15 +175,36 @@ Link: {noticia.link}
     """
 
 
-    print("Enviando notícias para o Gemini...")
+    modelo = os.getenv("GEMINI_MODEL", "gemini-3.8-flash")
+    modelo_reserva = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.5-flash-lite")
+    config = types.GenerateContentConfig(temperature=0.3)
 
-    response = client.models.generate_content(
-        model=os.getenv("GEMINI_MODEL", "gemini-3.5-flash"),
-        contents=[prompt],
-        config=types.GenerateContentConfig(
-            temperature=0.3,
-        ),
-    )
+    print(f"Enviando notícias para o Gemini com o modelo {modelo}...")
+
+    try:
+        response = client.models.generate_content(
+            model=modelo,
+            contents=[prompt],
+            config=config,
+        )
+    except Exception as erro:
+        codigo = getattr(erro, "status_code", None) or getattr(erro, "code", None)
+        erro_transitorio = codigo in (408, 429, 500, 502, 503, 504) or any(
+            marcador in str(erro).upper()
+            for marcador in ("UNAVAILABLE", "RESOURCE_EXHAUSTED", "503", "429")
+        )
+        if not erro_transitorio or modelo_reserva == modelo:
+            raise
+
+        print(
+            f"Modelo {modelo} indisponível temporariamente ({erro}); "
+            f"tentando o modelo reserva {modelo_reserva}."
+        )
+        response = client.models.generate_content(
+            model=modelo_reserva,
+            contents=[prompt],
+            config=config,
+        )
 
 
     if not response.text:
