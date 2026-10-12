@@ -7,7 +7,7 @@ from backend.scrapers.rss_reader import ler_feed_rss
 
 
 URL_FEED = "https://tecnoblog.net/feed/"
-LIMITE_NOTICIAS = 20
+LIMITE_NOTICIAS = 10
 TERMOS_JOGOS = (
     "videogame",
     "video game",

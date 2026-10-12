@@ -21,6 +21,7 @@ SELETOR_CARREGAR_MAIS = (
     'button[data-ds-variant="secondary"]'
 )
 CLICKS_CARREGAR_MAIS = 4
+LIMITE_CARDS_POR_PAGINA = 30
 ESPERA_APOS_CLIQUE_MS = 10_000
 
 
@@ -62,8 +63,8 @@ def _coletar_pagina(page, url):
     _clicar_carregar_mais(page, url)
 
     cards = page.locator(SELETOR_CARDS)
-    quantidade = cards.count()
-    print(f"Cards do InfoMoney em {url}: {quantidade}")
+    quantidade = min(cards.count(), LIMITE_CARDS_POR_PAGINA)
+    print(f"Cards recentes do InfoMoney em {url}: {quantidade} (limite: {LIMITE_CARDS_POR_PAGINA})")
 
     for i in range(quantidade):
         try:
@@ -119,7 +120,7 @@ def _coletar_pagina(page, url):
 
 def run_scraper():
     with sync_playwright() as p:
-        browser = p.chromium.launch(headless=False)
+        browser = p.chromium.launch(headless=True)
         page = browser.new_page()
 
         for url in URLS:
@@ -128,4 +129,3 @@ def run_scraper():
         browser.close()
 
     enviar_noticias()
-

@@ -1,19 +1,44 @@
 name: Scraper Notícias
 
 on:
+  # O cron é diário; o gate abaixo libera uma execução a cada 48 horas.
   schedule:
-    # 06:00 no horário de Brasília (09:00 UTC)
-    - cron: "0 9 * * *"
+    - cron: "0 9 * * *" # 06:00 no horário de Brasília
 
   workflow_dispatch:
 
 jobs:
+  schedule_gate:
+    name: Verificar intervalo de 48 horas
+    runs-on: ubuntu-latest
+    outputs:
+      executar: ${{ steps.intervalo.outputs.executar }}
+    steps:
+      - name: Alternar um dia sim e outro não
+        id: intervalo
+        shell: bash
+        run: |
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            echo "executar=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          dias_desde_epoch=$(( $(date -u +%s) / 86400 ))
+          if (( dias_desde_epoch % 2 == 0 )); then
+            echo "Cron liberado: execução deste dia."
+            echo "executar=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Cron alternado: hoje não executa os scrapers."
+            echo "executar=false" >> "$GITHUB_OUTPUT"
+          fi
+
   scraper:
     name: Executar pipeline de notícias
+    needs: schedule_gate
+    if: needs.schedule_gate.outputs.executar == 'true'
     runs-on: ubuntu-latest
 
     steps:
-
       - name: Baixar código
         uses: actions/checkout@v4
 
@@ -26,6 +51,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+
+      - name: Instalar Chromium do Playwright
+        run: python -m playwright install --with-deps chromium
 
       - name: Criar tabelas e aplicar migrações do banco
         env:
@@ -52,3 +80,17 @@ jobs:
           API_TOKEN: ${{ secrets.API_TOKEN }}
           ID_CANAL: ${{ secrets.ID_CANAL }}
         run: python -m backend.scripts.run_hacker_news
+
+      - name: Executar scraper do InfoMoney
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ID_CANAL: ${{ secrets.ID_CANAL }}
+        run: python -m backend.scripts.run_infomoney
+
+      - name: Executar scraper do Reddit
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          API_TOKEN: ${{ secrets.API_TOKEN }}
+          ID_CANAL: ${{ secrets.ID_CANAL }}
+        run: python -m backend.scripts.run_reddit
