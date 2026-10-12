@@ -22,7 +22,7 @@ def buscar_noticias_para_roteiro():
             select(Noticias)
             .where(
                 Noticias.roteiro_gerado_em.is_(None),
-                Noticias.status.in_(("LIDA", "APLICADA", "SALVA")),
+                Noticias.status.in_(("lida", "LIDA", "APLICADA", "SALVA")),
                 Noticias.coletado_em >= coletadas_desde,
             )
             .order_by(Noticias.coletado_em.desc(), Noticias.id.desc())

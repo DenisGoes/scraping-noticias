@@ -4,7 +4,6 @@ from threading import Lock, Thread
 
 import telebot
 from telebot.util import quick_markup
-from telebot.apihelper import ApiTelegramException
 
 from dotenv import load_dotenv
 from sqlalchemy import select
@@ -24,6 +23,16 @@ ID_CANAL = os.getenv("ID_CANAL")
 
 bot = telebot.TeleBot(API_TOKEN)
 _relatorio_lock = Lock()
+
+
+def telegram_message_not_found(error):
+    """Return True only for Telegram's explicit missing-message errors."""
+    description = getattr(error, "description", "") or ""
+    result_json = getattr(error, "result_json", None)
+    if isinstance(result_json, dict):
+        description = f"{description} {result_json.get('description', '')}"
+    message = f"{description} {error}".casefold()
+    return "message to delete not found" in message or "message not found" in message
 
 
 def _gerar_relatorio_em_background(noticia_id):
@@ -107,6 +116,19 @@ def _processar_callback(call):
         noticia_id = None
 
     if noticia_id is not None:
+        with Session() as session:
+            noticia = session.get(Noticias, noticia_id)
+            if noticia is None:
+                bot.answer_callback_query(
+                    call.id, "Notícia não encontrada.", show_alert=True
+                )
+                return
+            if noticia.roteiro_gerado_em is not None:
+                bot.answer_callback_query(
+                    call.id, "O roteiro desta notícia já foi gerado.", show_alert=True
+                )
+                return
+
         if not _relatorio_lock.acquire(blocking=False):
             bot.answer_callback_query(call.id, "Um relatório já está sendo gerado.")
             return
@@ -144,7 +166,10 @@ def _processar_callback(call):
                 return
 
             if acao == "LIDA":
-                noticia.status = "LIDA"
+                if (noticia.status or "").casefold() == "lida":
+                    bot.answer_callback_query(call.id, "Essa notícia já foi lida")
+                    return
+                noticia.status = "lida"
                 noticia.remover_em = datetime.now(UTC) + timedelta(days=3)
 
             elif acao == "REJEITADA":
@@ -152,11 +177,20 @@ def _processar_callback(call):
                 if telegram_message_id:
                     try:
                         bot.delete_message(ID_CANAL, telegram_message_id)
-                    except ApiTelegramException as e:
+                    except Exception as e:
                         print(f"Erro ao deletar mensagem do Telegram: {e}")
+                        if not telegram_message_not_found(e):
+                            bot.answer_callback_query(
+                                call.id,
+                                "Não consegui apagar a publicação; notícia mantida para nova tentativa.",
+                                show_alert=True,
+                            )
+                            return
                 session.delete(noticia)
                 session.commit()
-                bot.answer_callback_query(call.id, "Notícia removida do Telegram e do banco.")
+                bot.answer_callback_query(
+                    call.id, "Notícia removida do Telegram e do banco."
+                )
                 return
 
             else:
@@ -239,7 +273,7 @@ def enviar_mensagem(noticia):
     markup = quick_markup(
         {
             "✅ JÁ LI": {"callback_data": f"LIDA:{noticia.id}"},
-            "❌ REJEITADA": {"callback_data": f"REJEITADA:{noticia.id}"},
+            "❌ REJEITAR": {"callback_data": f"REJEITADA:{noticia.id}"},
             "📝 GERAR ROTEIRO": {"callback_data": f"GERAR_ROTEIRO:{noticia.id}"},
         },
         row_width=1,
